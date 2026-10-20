@@ -1,9 +1,0 @@
-node_modules
-.env
-dist
-.tmp
-npm-debug.log
-.DS_Store
-.git
-.github
-*.log
