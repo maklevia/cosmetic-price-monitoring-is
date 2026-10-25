@@ -3,17 +3,20 @@
   "private": true,
   "workspaces": [
     "api",
+    "auth-service",
     "frontend",
     "telegram-bot"
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace=api",
+    "dev:auth": "npm run dev --workspace=auth-service",
     "dev:scheduler": "npm run dev:scheduler --workspace=api",
     "dev:parser": "npm run dev:parser --workspace=api",
     "dev:notifier": "npm run dev:notifier --workspace=api",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:bot": "npm run dev --workspace=telegram-bot",
     "migrate": "npm run migration:run --workspace=api",
+    "migrate:auth": "npm run migration:run --workspace=auth-service",
     "build": "npm run build --workspaces --if-present"
   },
   "allowScripts": {

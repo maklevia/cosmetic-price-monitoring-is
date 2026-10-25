@@ -1,0 +1,38 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=../.env src/index.ts",
+    "build": "tsc --build && tsc-alias -f",
+    "start": "npm run migration:run:prod && node dist/index.js",
+    "typeorm": "tsx --env-file=../.env ../node_modules/typeorm/cli.js",
+    "migration:generate": "npm run typeorm -- -d src/config/data-source.ts migration:generate",
+    "migration:run": "npm run typeorm -- -d src/config/data-source.ts migration:run",
+    "migration:revert": "npm run typeorm -- -d src/config/data-source.ts migration:revert",
+    "migration:run:prod": "node ../node_modules/typeorm/cli.js -d dist/config/data-source.js migration:run"
+  },
+  "dependencies": {
+    "bcrypt-ts": "^8.0.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "tsc-alias": "^1.9.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
