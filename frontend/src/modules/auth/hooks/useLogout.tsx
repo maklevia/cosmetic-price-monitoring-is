@@ -1,4 +1,4 @@
-import { api } from "@fe/config/api";
+import { authApi } from "@fe/config/api";
 import { useState } from "react";
 import { useAuth } from "./useAuth";
 
@@ -10,7 +10,7 @@ export function useLogout() {
     setIsLoading(true);
     
     try {
-      await api.post('/auth/logout');
+      await authApi.post('/logout');
       await reloadUser();
     } catch (error) {
       console.error(error);

@@ -1,22 +1,43 @@
 import { AppDataSource } from "@api/config/data-source.js";
 import { User } from "@api/modules/user/User.js";
+import { ConflictError } from "@api/errors/AppError.js";
+
+export interface CreateUserProfileResult {
+  user: User;
+  created: boolean;
+}
 
 export class UserRepository {
   private userRepo = AppDataSource.getRepository(User);
 
-  async createUser(userEmail: string, userPassword: string): Promise<User> {
-    const newUser = new User();
-    newUser.email = userEmail;
-    newUser.password = userPassword;
+  async createOrGetProfile(
+    id: number,
+    email: string,
+    name: string | null,
+  ): Promise<CreateUserProfileResult> {
+    const existingById = await this.userRepo.findOneBy({ id });
 
-    const savedUser = await this.userRepo.save(newUser);
+    if (existingById) {
+      if (existingById.email !== email) {
+        throw new ConflictError("User ID is already used by another profile");
+      }
 
-    return savedUser;
-  }
+      return { user: existingById, created: false };
+    }
 
-  async findUserByEmail(userEmail: string): Promise<User | null> {
-    const foundUser = await this.userRepo.findOneBy({ email: userEmail });
-    return foundUser;
+    const existingByEmail = await this.userRepo.findOneBy({ email });
+    if (existingByEmail) {
+      throw new ConflictError("Email is already used by another profile");
+    }
+
+    const user = new User();
+    user.id = id;
+    user.email = email;
+    user.name = name;
+
+    await this.userRepo.insert(user);
+
+    return { user, created: true };
   }
 
   async findUserById(userId: number): Promise<User | null> {

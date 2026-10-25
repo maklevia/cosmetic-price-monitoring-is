@@ -10,23 +10,78 @@ export const api: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
+export const authApi: AxiosInstance = axios.create({
+  baseURL: getEnvOrThrow('AUTH_ORIGIN'),
+  headers: { "Content-Type": "application/json" },
+  timeout: 10000,
+  withCredentials: true,
+});
+
+let refreshPromise: Promise<void> | null = null;
+
+const refreshSession = (): Promise<void> => {
+  if (!refreshPromise) {
+    refreshPromise = authApi
+      .post("/refresh")
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
+const authEndpointsWithoutRefresh = new Set([
+  "/login",
+  "/signup",
+  "/refresh",
+  "/logout",
+]);
+
+const handleExpiredSession = async (): Promise<void> => {
+  await authApi.post("/logout").catch(() => undefined);
+  if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+    window.location.href = "/login";
+  }
+};
+
+authApi.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const url = error.config?.url;
+
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      url &&
+      !authEndpointsWithoutRefresh.has(url)
+    ) {
+      try {
+        await refreshSession();
+        return authApi(error.config);
+      } catch {
+        await handleExpiredSession();
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 api.interceptors.response.use(
   (response) => {
     return response;
   },
   async (error) => {
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      error.config.url !== "/auth/refresh"
-    ) {
+    if (error.response && error.response.status === 401) {
       try {
-        await api.post("/auth/refresh");
+        await refreshSession();
         return api(error.config);
       } catch {
-        if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
-          window.location.href = "/login";
-        }
+        await handleExpiredSession();
       }
     }
 

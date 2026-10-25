@@ -2,21 +2,18 @@ import { Collection } from "@api/modules/product/Collection.js";
 import { StoreRecordOverride } from "@api/modules/product/StoreRecordOverride.js";
 import { UserNotification } from "@api/modules/notification/UserNotification.js";
 import { ChannelToken } from "@api/modules/channel/ChannelToken.js";
-import { Column, CreateDateColumn, UpdateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, UpdateDateColumn, Entity, OneToMany, PrimaryColumn } from "typeorm";
 
 @Entity("Users")
     export class User {
-        @PrimaryGeneratedColumn()
+        @PrimaryColumn({type: "int"})
         id: number;
 
         @Column({type: "varchar", length: 255, unique: true})
         email: string;
 
-        @Column({type: "varchar", length: 255})
-        password: string;
-
         @Column({type: "varchar", length: 25, nullable: true})
-        name: string;
+        name: string | null;
 
         @Column({name: "telegram_account_id", type: "int", nullable: true, unique: true})
         telegramAccountId: number | null;
