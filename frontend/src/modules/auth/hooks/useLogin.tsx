@@ -1,4 +1,4 @@
-import { api } from "@fe/config/api";
+import { authApi } from "@fe/config/api";
 import { useState, useCallback } from "react";
 import { isAxiosError } from "axios";
 import { useAuth } from "@fe/modules/auth/hooks/useAuth";
@@ -24,7 +24,7 @@ export const useLogin = (options: HookInput): HookOutput => {
     setErrorMessage("");
     try {
       setIsLoading(true);
-      await api.post("/auth/login", {
+      await authApi.post("/login", {
         email,
         enteredPassword: password,
       });

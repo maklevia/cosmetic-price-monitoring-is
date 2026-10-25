@@ -12,8 +12,9 @@ export default defineConfig(({ mode }) => {
       tsconfigPaths: true,
     },
     define: {
-      // Expose the API_ORIGIN explicitly to the client code
+      // Expose service origins explicitly to the client code
       'import.meta.env.API_ORIGIN': JSON.stringify(env.API_ORIGIN),
+      'import.meta.env.AUTH_ORIGIN': JSON.stringify(env.AUTH_ORIGIN),
     }
   };
 })

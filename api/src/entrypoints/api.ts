@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { authRoutes } from "@api/modules/auth/authRoutes.js";
 import { getEnvOrThrow } from "@api/utils/getEnvOrThrow.js";
 import { productRoutes } from "@api/modules/product/productRoutes.js";
 import { notificationRoutes } from "@api/modules/notification/notificationRoutes.js";
 import { channelRoutes } from "@api/modules/channel/channelRoutes.js";
 import { userRoutes } from "@api/modules/user/userRoutes.js";
+import { internalRoutes } from "@api/modules/internal/internalRoutes.js";
 import { errorMiddleware } from "@api/middlewares/errorMiddleware.js";
 import {
   closeDataSource,
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
     res.send("API is running with TypeScript!");
   });
 
-  app.use("/auth", authRoutes);
+  app.use("/internal", internalRoutes);
   app.use("/product", productRoutes);
   app.use("/notification", notificationRoutes);
   app.use("/channel", channelRoutes);
