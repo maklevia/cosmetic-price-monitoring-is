@@ -9,6 +9,7 @@ import { PriceHistory } from "@api/modules/product/PriceHistory.js";
 import { PriceDropQueue } from "@api/modules/notification/PriceDropQueue.js";
 import { UserNotification } from "@api/modules/notification/UserNotification.js";
 import { ChannelToken } from "@api/modules/channel/ChannelToken.js";
+import { ParseJob } from "@api/modules/job/ParseJob.js";
 import { getEnvOrThrow } from "@api/utils/getEnvOrThrow.js";
 
 
@@ -30,7 +31,7 @@ export const AppDataSource = new DataSource({
     poolSize: 30,
     entities: [
         User, Product, Collection, StoreRecord, StoreRecordOverride,
-        PriceHistory, PriceDropQueue, UserNotification, ChannelToken
+        PriceHistory, PriceDropQueue, UserNotification, ChannelToken, ParseJob
     ],
     migrations: [__dirname + "/../migrations/*.{js,ts}"],
 })
