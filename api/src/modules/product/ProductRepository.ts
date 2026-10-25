@@ -173,6 +173,13 @@ export class ProductRepository {
     });
   }
 
+  async findStoreRecordById(id: number): Promise<StoreRecord | null> {
+    return await this.storeRecordRepo.findOne({
+      where: { id },
+      relations: { product: true },
+    });
+  }
+
   async updateStoreRecordsCron(
     id: number,
     inStock: boolean,

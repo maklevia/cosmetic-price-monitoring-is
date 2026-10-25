@@ -11,10 +11,10 @@ const notifRepository = new NotificationRepository();
 const channelRepository = new ChannelRepository();
 const gateways = getAllGateways();
 
-export class NotificationCron {
+export class NotificationProcessor {
   async sendNotifications(): Promise<void> {
     try {
-      console.log("Starting to send notifications");
+      console.log("[notifier] Starting to send notifications");
       const notifData = await notifRepository.getPendingNotificationsData();
       const processedQueueIds: number[] = [];
 
@@ -25,15 +25,18 @@ export class NotificationCron {
       if (processedQueueIds.length > 0) {
         await notifRepository.updatePriceDropQueue(processedQueueIds);
       }
-      console.log("Finished to send notifications");
+      console.log("[notifier] Finished sending notifications");
     } catch (error) {
       if (!(error instanceof AppError)) {
-        console.log("API: CronNotifService error: ", error);
+        console.log("[notifier] Error while sending notifications: ", error);
       }
     }
   }
 
-  private async processUserNotifications(user: PendingNotifData, processedQueueIds: number[]): Promise<void> {
+  private async processUserNotifications(
+    user: PendingNotifData,
+    processedQueueIds: number[],
+  ): Promise<void> {
     const channelAccountIds: Partial<Record<ChannelName, number | null>> = {
       [ChannelName.Telegram]: user.telegramAccountId,
     };
@@ -46,18 +49,32 @@ export class NotificationCron {
       processedQueueIds.push(priceDropData.queueId);
     }
 
-    // Assign batch_id to all queue items for this user
-    const queueIds = user.priceDropsData.map(d => d.queueId);
+    const queueIds = user.priceDropsData.map((d) => d.queueId);
     await notifRepository.assignBatchId(queueIds, batchId);
 
     if (user.priceDropsData.length === 1) {
-      await this.dispatchNotificationToGateways(user.userId, user.priceDropsData[0], channelAccountIds, failedChannels, batchId);
+      await this.dispatchNotificationToGateways(
+        user.userId,
+        user.priceDropsData[0],
+        channelAccountIds,
+        failedChannels,
+        batchId,
+      );
     } else if (user.priceDropsData.length > 1) {
-      await this.dispatchSummaryToGateways(user.userId, user.priceDropsData.length, channelAccountIds, failedChannels, batchId);
+      await this.dispatchSummaryToGateways(
+        user.userId,
+        user.priceDropsData.length,
+        channelAccountIds,
+        failedChannels,
+        batchId,
+      );
     }
   }
 
-  private async createInAppNotification(userId: number, priceDropData: PriceDropDInfo): Promise<void> {
+  private async createInAppNotification(
+    userId: number,
+    priceDropData: PriceDropDInfo,
+  ): Promise<void> {
     const title = "🚨 Price Drop";
     const message = this.getNotifMessage(
       priceDropData.productName,
@@ -85,16 +102,25 @@ export class NotificationCron {
       if (!accountId || failedChannels.has(channelName)) continue;
 
       try {
-        await gateway.sendPriceDropNotification(accountId, {
-          name: priceDropData.productName,
-          oldPrice: priceDropData.oldPrice,
-          newPrice: priceDropData.newPrice,
-          link: priceDropData.productLink,
-          image: priceDropData.image,
-          storeName: priceDropData.storeName,
-        }, batchId);
+        await gateway.sendPriceDropNotification(
+          accountId,
+          {
+            name: priceDropData.productName,
+            oldPrice: priceDropData.oldPrice,
+            newPrice: priceDropData.newPrice,
+            link: priceDropData.productLink,
+            image: priceDropData.image,
+            storeName: priceDropData.storeName,
+          },
+          batchId,
+        );
       } catch (error) {
-        await this.handleGatewayError(error, userId, channelName, failedChannels);
+        await this.handleGatewayError(
+          error,
+          userId,
+          channelName,
+          failedChannels,
+        );
       }
     }
   }
@@ -113,7 +139,12 @@ export class NotificationCron {
       try {
         await gateway.sendPriceDropSummary(accountId, count, batchId);
       } catch (error) {
-        await this.handleGatewayError(error, userId, channelName, failedChannels);
+        await this.handleGatewayError(
+          error,
+          userId,
+          channelName,
+          failedChannels,
+        );
       }
     }
   }
@@ -122,7 +153,7 @@ export class NotificationCron {
     error: any,
     userId: number,
     channelName: ChannelName,
-    failedChannels: Set<ChannelName>
+    failedChannels: Set<ChannelName>,
   ): Promise<void> {
     if (error instanceof ChannelNotificationError) {
       failedChannels.add(channelName);
@@ -133,7 +164,10 @@ export class NotificationCron {
         "Your Telegram bot was disconnected. Reconnect anytime from your profile.",
       );
     }
-    console.error(`Failed to send ${channelName} notification to user ${userId}:`, error);
+    console.error(
+      `[notifier] Failed to send ${channelName} notification to user ${userId}:`,
+      error,
+    );
   }
 
   private getNotifMessage(
@@ -142,17 +176,5 @@ export class NotificationCron {
     newPrice: number,
   ): string {
     return `${productName}: ${oldPrice} -> ${newPrice}`;
-  }
-
-  async clearOldRecords(): Promise<void> {
-    try {
-      await notifRepository.clearOldRecords();
-    } catch (error) {
-      if (!(error instanceof AppError)) {
-        console.log(
-          "API Cron: Error clearing up old db records (price queue and notifications)",
-        );
-      }
-    }
   }
 }

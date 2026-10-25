@@ -60,9 +60,22 @@ npm run dev:frontend
 npm run dev:bot
 ```
 
+The API no longer schedules cron jobs. Start the background services separately:
+
+```bash
+npm run dev:scheduler   # cron schedules only; enqueues jobs
+npm run dev:parser      # consumes parse/discovery jobs
+npm run dev:notifier    # consumes notification dispatch jobs
+```
+
 - Frontend: http://localhost:5173
 - API: http://localhost:3001
 - The Telegram bot requires a real `TELEGRAM_BOT_TOKEN` in `.env`.
+- Parser workers can be scoped to one store with `PARSER_STORE=eva`,
+  `PARSER_STORE=makeup` or `PARSER_STORE=notino`. Without it, one worker
+  processes all stores.
+- Use `PARSER_CONCURRENCY`, `PARSER_DELAY_MS`, `PARSER_POLL_MS` and
+  `NOTIFIER_POLL_MS` to tune the workers.
 
 ### Build
 
@@ -73,7 +86,11 @@ npm run build
 ## Repository layout
 
 ```text
-api/            Express + TypeScript + TypeORM API
-frontend/       React + Vite + Chakra UI
-telegram-bot/   Telegraf bot
+api/
+  src/entrypoints/   api, scheduler, parser and notifier process entrypoints
+  src/jobs/          scheduling and job-processing logic
+  src/modules/job/   job entity, queue interface and PostgreSQL queue
+  src/modules/       domain modules (auth, product, notification, user, channel)
+frontend/            React + Vite + Chakra UI
+telegram-bot/        Telegraf bot
 ```
