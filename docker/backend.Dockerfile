@@ -12,9 +12,11 @@ RUN npm ci
 
 COPY api ./api
 COPY auth-service ./auth-service
+COPY telegram-bot ./telegram-bot
 
 RUN npm run build --workspace=api \
-  && npm run build --workspace=auth-service
+  && npm run build --workspace=auth-service \
+  && npm run build --workspace=telegram-bot
 
 FROM node:22-alpine AS runtime
 
@@ -32,5 +34,6 @@ RUN npm ci --omit=dev
 
 COPY --from=build /app/api/dist ./api/dist
 COPY --from=build /app/auth-service/dist ./auth-service/dist
+COPY --from=build /app/telegram-bot/dist ./telegram-bot/dist
 
 USER node

@@ -21,7 +21,10 @@ async function main(): Promise<void> {
 
   const port = getEnvOrThrow("API_PORT");
   const corsOptions = {
-    origin: [getEnvOrThrow("FE_ORIGIN")],
+    origin: getEnvOrThrow("FE_ORIGIN")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     credentials: true,
   };
 

@@ -19,8 +19,6 @@ services:
       AUTH_DB_NAME: ${AUTH_DB_NAME}
       AUTH_DB_USER: ${AUTH_DB_USER}
       AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -49,8 +47,6 @@ services:
   api:
     <<: *backend
     command: ["node", "api/dist/entrypoints/api.js"]
-    ports:
-      - "${API_PORT:-3001}:${API_PORT:-3001}"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -65,8 +61,6 @@ services:
   auth-service:
     <<: *backend
     command: ["node", "auth-service/dist/index.js"]
-    ports:
-      - "${AUTH_SERVICE_PORT:-3002}:${AUTH_SERVICE_PORT:-3002}"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -78,6 +72,29 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        API_ORIGIN: ${API_ORIGIN:-/api}
+        AUTH_ORIGIN: ${AUTH_ORIGIN:-/auth}
+    image: cosmetics-web:local
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   scheduler:
@@ -105,6 +122,16 @@ services:
       migrate:
         condition: service_completed_successfully
     stop_grace_period: 60s
+    restart: unless-stopped
+
+  bot:
+    <<: *backend
+    command: ["node", "telegram-bot/dist/index.js"]
+    profiles: ["bot"]
+    depends_on:
+      api:
+        condition: service_healthy
+    stop_grace_period: 20s
     restart: unless-stopped
 
 volumes:

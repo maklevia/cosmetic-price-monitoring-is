@@ -2,7 +2,7 @@ import axios from "axios";
 import { Context } from "telegraf";
 import { getEnvOrThrow } from "@bot/utils/getEnvOrThrow.js";
 
-const API_URL = getEnvOrThrow("API_ORIGIN");
+const API_URL = getEnvOrThrow("API_INTERNAL_URL");
 const API_KEY = getEnvOrThrow("API_KEY");
 
 interface CommandContext extends Context {

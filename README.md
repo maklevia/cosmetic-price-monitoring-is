@@ -11,10 +11,10 @@ stack planned for the university project.
 - Node.js 22+
 - npm
 - PostgreSQL 15+
-- Docker Desktop with Compose (optional, for the containerized backend)
+- Docker Desktop with Compose (optional, for the full containerized stack)
 
-Docker Compose can run the backend stack together. The frontend still runs
-outside Docker in this phase; see [Docker stack](#docker-stack).
+Docker Compose can run the web app, backend, workers, and optional Telegram bot
+together; see [Docker stack](#docker-stack).
 
 ### 1. Install dependencies
 
@@ -117,13 +117,17 @@ The Compose stack contains:
 
 - `postgres` — main and auth databases on one PostgreSQL server;
 - `migrate` — one-shot service that runs both TypeORM migration sets;
-- `api` — main HTTP API on port `3001`;
-- `auth-service` — auth HTTP service on port `3002`;
+- `api` — main HTTP API, internal port `3001`;
+- `auth-service` — auth HTTP service, internal port `3002`;
+- `web` — nginx serving the built frontend and proxying `/api` and `/auth`;
 - `scheduler` — one cron/scheduler process;
 - `parser-worker` — consumes parse and discovery jobs;
-- `notifier` — consumes notification-dispatch jobs.
+- `notifier` — consumes notification-dispatch jobs;
+- `bot` — optional Telegram bot, enabled with the `bot` Compose profile.
 
-The frontend is not containerized yet. Run it locally with `npm run dev:frontend`.
+The browser uses the web container at http://localhost:8080. Only this port is
+published, and it is bound to `127.0.0.1`. API, auth, and PostgreSQL are
+reachable only inside the Docker network.
 
 ### 1. Configure Docker environment
 
@@ -134,12 +138,16 @@ cp .env.docker.example .env.docker
 Set real secrets in `.env.docker`. The file is gitignored.
 
 Inside Compose, services use `DB_HOST=postgres` and `AUTH_DB_HOST=postgres`;
-containers reach PostgreSQL on its internal port `5432`. The host port `5432`
-is only for connecting from your Mac.
+containers reach PostgreSQL on its internal port `5432`. PostgreSQL is not
+published on the host.
 
 `NODE_ENV=development` is intentional for local HTTP. With
 `NODE_ENV=production`, auth cookies become `Secure` and browsers will not send
 them over plain HTTP. Switch to production mode together with HTTPS.
+
+`FE_ORIGIN` may contain a comma-separated list. The Docker stack allows the
+nginx web origin (`http://localhost:8080`). Local `.env` keeps the Vite origin
+(`http://localhost:5173`) for `npm run dev:frontend`.
 
 ### 2. Build and start
 
@@ -159,13 +167,27 @@ docker compose --env-file .env.docker logs -f api auth-service
 ```
 
 `migrate` is expected to show `Exited (0)`; it is a one-shot container, not a
-long-running service. The API is available at http://localhost:3001 and the
-auth service at http://localhost:3002.
+long-running service.
+
+Open the application at http://localhost:8080. The web container serves the
+SPA and proxies:
+
+- `/api/*` to the API;
+- `/auth/*` to the auth service;
+- `/api/internal/*` is blocked at nginx.
+
+API and auth are not published on the host. To inspect them, run commands
+inside the Compose network:
+
+```bash
+docker compose --env-file .env.docker exec web wget -qO- http://api:3001/
+docker compose --env-file .env.docker exec web wget -qO- http://auth-service:3002/
+```
 
 ### 3. Start only the core stack first
 
 ```bash
-docker compose --env-file .env.docker up -d postgres migrate api auth-service
+docker compose --env-file .env.docker up -d postgres migrate api auth-service web
 ```
 
 Then start the background processes:
@@ -178,7 +200,18 @@ Run exactly one `scheduler`. Multiple schedulers can enqueue duplicate jobs.
 The parser queue uses `FOR UPDATE SKIP LOCKED`; verify parser behavior before
 scaling that service.
 
-### 4. Stop
+### 4. Start the Telegram bot
+
+The bot is behind the `bot` profile because it needs a real Telegram token.
+Set `TELEGRAM_BOT_TOKEN` in `.env.docker`, then start it with:
+
+```bash
+docker compose --env-file .env.docker --profile bot up -d bot
+```
+
+Without the profile, the normal backend stack does not start the bot.
+
+### 5. Stop
 
 ```bash
 docker compose --env-file .env.docker down
@@ -195,9 +228,12 @@ The auth database and role are created by
 `docker/postgres/init/01-auth-database.sh` only when the volume is initialized
 for the first time.
 
-If port `5432` is already used by another local PostgreSQL container, stop that
-container or change the host side of the `postgres` port mapping in
-`docker-compose.yml`.
+PostgreSQL is not published on the host. To inspect it:
+
+```bash
+docker compose --env-file .env.docker exec postgres psql \
+  -U cosmetics -d cosmetics_price_monitoring
+```
 
 ## Repository layout
 
@@ -212,6 +248,6 @@ auth-service/
   src/entities/      credentials and refresh tokens
 frontend/            React + Vite + Chakra UI
 telegram-bot/        Telegraf bot
-docker/              backend image and PostgreSQL init scripts
-docker-compose.yml   backend container stack
+docker/              backend/web images, nginx config, PostgreSQL init scripts
+docker-compose.yml   full container stack
 ```
