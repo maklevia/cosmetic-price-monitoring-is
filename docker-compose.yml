@@ -1,0 +1,111 @@
+name: cosmetics-price-monitoring
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: docker/backend.Dockerfile
+  image: cosmetics-backend:local
+  env_file:
+    - .env.docker
+  init: true
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      AUTH_DB_NAME: ${AUTH_DB_NAME}
+      AUTH_DB_USER: ${AUTH_DB_USER}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        node node_modules/typeorm/cli.js -d api/dist/config/data-source.js migration:run
+        node node_modules/typeorm/cli.js -d auth-service/dist/config/data-source.js migration:run
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: ["node", "api/dist/entrypoints/api.js"]
+    ports:
+      - "${API_PORT:-3001}:${API_PORT:-3001}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:' + process.env.API_PORT + '/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  auth-service:
+    <<: *backend
+    command: ["node", "auth-service/dist/index.js"]
+    ports:
+      - "${AUTH_SERVICE_PORT:-3002}:${AUTH_SERVICE_PORT:-3002}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:' + process.env.AUTH_SERVICE_PORT + '/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  scheduler:
+    <<: *backend
+    command: ["node", "api/dist/entrypoints/scheduler.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+  parser-worker:
+    <<: *backend
+    command: ["node", "api/dist/entrypoints/parser.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 120s
+    restart: unless-stopped
+
+  notifier:
+    <<: *backend
+    command: ["node", "api/dist/entrypoints/notifier.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 60s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
