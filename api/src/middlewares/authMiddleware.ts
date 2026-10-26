@@ -1,27 +1,43 @@
 import { NextFunction, Request, Response } from "express";
-import { AuthService } from "@api/modules/auth/AuthService.js";
+import jwt from "jsonwebtoken";
+import { getEnvOrThrow } from "@api/utils/getEnvOrThrow.js";
 import { UserPayload } from "@api/types/AuthTypes.js";
 import { AuthenticationError } from "@api/errors/AppError.js";
 
-const authService = new AuthService();
+const accessTokenSecret = getEnvOrThrow("ACCESS_TOKEN_SECRET");
 
 export const authMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const accessToken: string | null = req.cookies.accessToken;
+  const accessToken: string | undefined = req.cookies.accessToken;
+
   if (!accessToken) {
     return next(new AuthenticationError("No access token provided"));
   }
 
-  authService.validateAccessToken(accessToken, (error, decodedUser) => {
-    if (error || !decodedUser) {
-      return next(new AuthenticationError("Invalid access token"));
+  try {
+    const decoded = jwt.verify(accessToken, accessTokenSecret);
+
+    if (
+      typeof decoded === "string" ||
+      decoded.type !== "access" ||
+      typeof decoded.userId !== "number" ||
+      typeof decoded.userEmail !== "string"
+    ) {
+      throw new AuthenticationError("Invalid access token payload");
     }
-    res.locals.user = decodedUser;
+
+    res.locals.user = {
+      userId: decoded.userId,
+      userEmail: decoded.userEmail,
+    } as UserPayload;
+
     next();
-  });
+  } catch {
+    next(new AuthenticationError("Invalid or expired access token"));
+  }
 };
 
 export function getAuthUser(res: Response): UserPayload {
