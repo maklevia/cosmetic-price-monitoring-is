@@ -2,7 +2,7 @@ import { getEnvOrThrow } from "@bot/utils/getEnvOrThrow.js";
 import axios from "axios";
 import { Context } from "telegraf";
 
-const API_URL = getEnvOrThrow("API_ORIGIN");
+const API_URL = getEnvOrThrow("API_INTERNAL_URL");
 const API_KEY = getEnvOrThrow("API_KEY");
 
 export const onShowPriceDrops = async (ctx: Context) => {
