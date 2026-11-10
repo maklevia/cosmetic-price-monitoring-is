@@ -1,0 +1,150 @@
+# Extra metrics collected from the main application database.
+# postgres_exporter prefixes every column with the query name:
+#   query "cosmetics_db_products" + column "total" -> cosmetics_db_products_total
+# Each SQL column is either a label or a metric value.
+
+cosmetics_db_products:
+  query: "SELECT count(*) AS total FROM \"Products\""
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Number of products in the catalogue"
+
+cosmetics_db_collections:
+  query: "SELECT count(*) AS total FROM \"Collections\""
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Number of product collections"
+
+cosmetics_db_users:
+  query: "SELECT count(*) AS total FROM \"Users\""
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Number of registered user profiles"
+
+cosmetics_db_store_records:
+  query: "SELECT store_name, count(*) AS total FROM \"Store_Records\" GROUP BY store_name"
+  metrics:
+    - store_name:
+        usage: "LABEL"
+        description: "Store name"
+    - total:
+        usage: "GAUGE"
+        description: "Number of store records per store"
+
+cosmetics_db_price_history_rows:
+  query: |
+    SELECT count(*) AS total,
+           count(*) FILTER (
+             WHERE recorded_at > now() - interval '24 hours'
+           ) AS last_24h
+    FROM "Price_History"
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Total number of price history rows"
+    - last_24h:
+        usage: "GAUGE"
+        description: "Price history rows recorded in the last 24 hours"
+
+cosmetics_db_parse:
+  query: "SELECT type, status, count(*) AS jobs FROM \"Parse_Jobs\" GROUP BY type, status"
+  metrics:
+    - type:
+        usage: "LABEL"
+        description: "Job type"
+    - status:
+        usage: "LABEL"
+        description: "Job status"
+    - jobs:
+        usage: "GAUGE"
+        description: "Parse jobs by type and status"
+
+cosmetics_db_parse_jobs_oldest_pending_age:
+  query: "SELECT COALESCE(EXTRACT(EPOCH FROM now() - min(available_at)), 0) AS seconds FROM \"Parse_Jobs\" WHERE status = 'pending'"
+  metrics:
+    - seconds:
+        usage: "GAUGE"
+        description: "Age of the oldest pending parse job in seconds"
+
+cosmetics_db_price_drop:
+  query: "SELECT status, count(*) AS queue FROM \"Price_Drop_Queue\" GROUP BY status"
+  metrics:
+    - status:
+        usage: "LABEL"
+        description: "Price drop queue status"
+    - queue:
+        usage: "GAUGE"
+        description: "Price drop notifications by status"
+
+cosmetics_db_price_drop_queue_oldest_age:
+  query: "SELECT COALESCE(EXTRACT(EPOCH FROM now() - min(created_at)), 0) AS seconds FROM \"Price_Drop_Queue\" WHERE status = 'pending'"
+  metrics:
+    - seconds:
+        usage: "GAUGE"
+        description: "Age of the oldest pending price drop notification in seconds"
+
+cosmetics_db_last_price_update:
+  query: "SELECT store_name, COALESCE(EXTRACT(EPOCH FROM max(recorded_at)), 0) AS timestamp_seconds FROM \"Price_History\" GROUP BY store_name"
+  metrics:
+    - store_name:
+        usage: "LABEL"
+        description: "Store name"
+    - timestamp_seconds:
+        usage: "GAUGE"
+        description: "Unix timestamp of the last price update per store"
+
+cosmetics_db_table:
+  query: "SELECT c.relname AS table_name, pg_total_relation_size(c.oid) AS size_bytes FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r'"
+  metrics:
+    - table_name:
+        usage: "LABEL"
+        description: "Table name"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Table size including indexes and TOAST data"
+
+cosmetics_db_unread_notifications:
+  query: "SELECT count(*) AS total FROM \"User_Notifications\" WHERE is_read = false"
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Unread in-app notifications"
+
+cosmetics_pg_stat_statements:
+  query: |
+    SELECT COALESCE(queryid::text, 'unknown') AS queryid,
+           sum(calls)::bigint AS calls,
+           sum(total_exec_time) / 1000 AS total_exec_time_seconds,
+           avg(mean_exec_time) / 1000 AS mean_exec_time_seconds,
+           sum(rows)::bigint AS rows,
+           sum(shared_blks_read)::bigint AS shared_blks_read,
+           sum(shared_blks_hit)::bigint AS shared_blks_hit
+    FROM pg_stat_statements
+    GROUP BY queryid
+    ORDER BY sum(total_exec_time) DESC
+    LIMIT 20
+  metrics:
+    - queryid:
+        usage: "LABEL"
+        description: "PostgreSQL query identifier"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times the query was executed"
+    - total_exec_time_seconds:
+        usage: "COUNTER"
+        description: "Total query execution time in seconds"
+    - mean_exec_time_seconds:
+        usage: "GAUGE"
+        description: "Mean query execution time in seconds"
+    - rows:
+        usage: "COUNTER"
+        description: "Total rows returned or affected"
+    - shared_blks_read:
+        usage: "COUNTER"
+        description: "Shared blocks read"
+    - shared_blks_hit:
+        usage: "COUNTER"
+        description: "Shared blocks found in cache"
