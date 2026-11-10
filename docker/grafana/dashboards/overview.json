@@ -967,6 +967,79 @@
       ],
       "title": "Application Logs",
       "type": "logs"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 16,
+      "panels": [],
+      "title": "Traces",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 17,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "limit": 20,
+          "query": "{ resource.service.name = \"api\" }",
+          "queryType": "traceql",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent API Traces",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "nested": true
+            },
+            "renameByName": {
+              "startTime": "Start",
+              "traceDuration": "Duration (ms)",
+              "traceID": "Trace ID",
+              "traceName": "Name",
+              "traceService": "Service"
+            }
+          }
+        }
+      ],
+      "type": "table"
     }
   ],
   "refresh": "30s",
@@ -986,6 +1059,6 @@
   "timezone": "browser",
   "title": "Cosmetics Price Monitoring",
   "uid": "cosmetics-overview",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

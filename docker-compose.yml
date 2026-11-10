@@ -122,8 +122,12 @@ services:
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     depends_on:
-      - prometheus
-      - loki
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
     restart: unless-stopped
 
   loki:
@@ -155,6 +159,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  tempo-init:
+    image: grafana/tempo:2.9.0
+    user: root
+    entrypoint: ["chown", "-R", "10001:10001", "/var/tempo"]
+    volumes:
+      - tempo_data:/var/tempo
+    restart: "no"
+
+  tempo:
+    image: grafana/tempo:2.9.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./docker/tempo/tempo.yml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    depends_on:
+      tempo-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
   migrate:
     <<: *backend
     command:
@@ -171,7 +200,11 @@ services:
 
   api:
     <<: *backend
-    command: ["node", "api/dist/entrypoints/api.js"]
+    command: ["node", "--import", "./api/dist/observability/tracing.js", "api/dist/entrypoints/api.js"]
+    environment:
+      METRICS_PORT: ${METRICS_PORT:-9464}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
+      OTEL_SERVICE_NAME: api
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -185,7 +218,11 @@ services:
 
   auth-service:
     <<: *backend
-    command: ["node", "auth-service/dist/index.js"]
+    command: ["node", "--import", "./auth-service/dist/observability/tracing.js", "auth-service/dist/index.js"]
+    environment:
+      METRICS_PORT: ${METRICS_PORT:-9464}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
+      OTEL_SERVICE_NAME: auth-service
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -224,7 +261,11 @@ services:
 
   scheduler:
     <<: *backend
-    command: ["node", "api/dist/entrypoints/scheduler.js"]
+    command: ["node", "--import", "./api/dist/observability/tracing.js", "api/dist/entrypoints/scheduler.js"]
+    environment:
+      METRICS_PORT: ${METRICS_PORT:-9464}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
+      OTEL_SERVICE_NAME: scheduler
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -233,7 +274,11 @@ services:
 
   parser-worker:
     <<: *backend
-    command: ["node", "api/dist/entrypoints/parser.js"]
+    command: ["node", "--import", "./api/dist/observability/tracing.js", "api/dist/entrypoints/parser.js"]
+    environment:
+      METRICS_PORT: ${METRICS_PORT:-9464}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
+      OTEL_SERVICE_NAME: parser-worker
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -242,7 +287,11 @@ services:
 
   notifier:
     <<: *backend
-    command: ["node", "api/dist/entrypoints/notifier.js"]
+    command: ["node", "--import", "./api/dist/observability/tracing.js", "api/dist/entrypoints/notifier.js"]
+    environment:
+      METRICS_PORT: ${METRICS_PORT:-9464}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://tempo:4318}
+      OTEL_SERVICE_NAME: notifier
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -265,3 +314,4 @@ volumes:
   grafana_data:
   loki_data:
   alloy_data:
+  tempo_data:
