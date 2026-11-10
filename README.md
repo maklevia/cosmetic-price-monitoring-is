@@ -92,3 +92,119 @@ docker compose --env-file .env.docker up -d --build
 - Prometheus: http://localhost:9090
 - Optional Telegram bot:
   `docker compose --env-file .env.docker --profile bot up -d bot`
+
+`migrate` and `monitoring-init` must finish successfully before the services
+that depend on them become healthy; both are one-shot containers and should show
+`Exited (0)`.
+
+## Metrics and Prometheus
+
+### What is running
+
+- Every backend process starts a separate small HTTP server on `METRICS_PORT`
+  (`9464` by default): `api`, `auth-service`, `scheduler`, `parser-worker` and
+  `notifier`. It exposes `/metrics` for Prometheus and `/healthz` for checks.
+  This server is not the Express app and is not proxied by nginx, so metrics
+  are never exposed through `/api` or `/auth`.
+- `postgres-exporter` and `postgres-exporter-auth` read PostgreSQL statistics
+  and a few application tables. They connect as the read-only `monitoring` role.
+- Prometheus scrapes every target every 15 seconds and keeps data for 15 days
+  in the `prometheus_data` volume. The `instance` label is pinned to the service
+  name, so restarting a container does not create duplicate series.
+- `pg_stat_statements` is enabled through `shared_preload_libraries`, which lets
+  the exporter show the slowest SQL queries.
+
+Locally started services expose Prometheus metrics on separate ports: API `9464`,
+auth `9465`, scheduler `9466`, parser `9467`, notifier `9468`. In Docker every
+container uses `9464` because each container has its own network namespace.
+
+### What is collected
+
+- **PostgreSQL activity:** connections, commits and rollbacks, cache hit ratio,
+  disk reads, locks, deadlocks, temporary files, database and table sizes,
+  per-table row changes, index usage and the top 20 queries from
+  `pg_stat_statements`.
+- **Database content:** product, user, collection and price-history counts,
+  store records per store, queue sizes, oldest pending job, last price update
+  per store and unread notifications.
+- **HTTP:** request count, duration histogram and status codes. The route label
+  uses the Express route template, not the raw URL.
+- **Auth:** signup, login, refresh and password-reset outcomes, and failed token
+  validations.
+- **Workers:** parser jobs and duration, store request results, price updates
+  and drops, notification delivery and scheduler runs.
+- **Node.js:** CPU, memory, event loop lag, garbage collection and other default
+  process metrics supplied by `prom-client`.
+
+### Check that it works
+
+```bash
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker ps
+```
+
+`migrate` and `monitoring-init` should show `Exited (0)`. Open
+http://localhost:9090/targets; every target should be `UP`.
+
+Inspect a service directly from inside the Docker network:
+
+```bash
+docker compose --env-file .env.docker exec web wget -qO- http://api:9464/metrics | head
+docker compose --env-file .env.docker exec web wget -qO- http://postgres-exporter:9187/metrics | grep cosmetics_db_
+```
+
+Example PromQL queries for the demo:
+
+```promql
+up
+rate(pg_stat_database_xact_commit[1m])
+pg_stat_database_numbackends / pg_settings_max_connections
+rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m]))
+rate(cosmetics_http_requests_total[5m])
+histogram_quantile(0.95, sum by (le, route) (rate(cosmetics_http_request_duration_seconds_bucket[5m])))
+cosmetics_db_parse_jobs
+time() - cosmetics_db_last_price_update_timestamp_seconds
+```
+
+### Configuration files
+
+- `docker/prometheus/prometheus.yml` — scrape targets and intervals.
+- `docker/postgres-exporter/queries.yaml` — custom metrics for the main DB.
+- `docker/postgres-exporter/queries-auth.yaml` — custom metrics for the auth DB.
+- `docker/postgres/observability.sql` — monitoring role and extension setup.
+- `api/src/observability/metrics.ts` — metric definitions and metrics server.
+- `auth-service/src/observability/metrics.ts` — auth metric definitions.
+
+`MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION` and
+`PROMETHEUS_PORT` are configured in `.env.docker` (see
+`.env.docker.example`). The metrics and exporter ports are not published on the
+host. Prometheus itself has no login in this phase and is bound to
+`127.0.0.1`; Grafana will provide the authenticated monitoring UI later.
+
+Reset stored metrics together with the database:
+
+```bash
+docker compose --env-file .env.docker down -v
+```
+
+## Repository layout
+
+```text
+api/
+  src/entrypoints/      api, scheduler, parser and notifier process entrypoints
+  src/jobs/             scheduling and job-processing logic
+  src/modules/job/      job entity, queue interface and PostgreSQL queue
+  src/modules/          domain modules (product, notification, user, channel, internal)
+  src/observability/    Prometheus metrics and metrics server
+auth-service/
+  src/modules/auth/     signup, login, refresh-token rotation, logout, password reset
+  src/entities/         credentials and refresh tokens
+  src/observability/    Prometheus metrics and metrics server
+frontend/               React + Vite + Chakra UI
+telegram-bot/           Telegraf bot
+docker/
+  prometheus/           Prometheus scrape configuration
+  postgres-exporter/    custom SQL metrics for both databases
+  postgres/             init scripts, monitoring role and pg_stat_statements
+docker-compose.yml      full container stack
+```
