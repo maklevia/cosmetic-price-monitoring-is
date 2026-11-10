@@ -960,7 +960,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{service=~\"api|auth-service|scheduler|parser-worker|notifier\"}",
+          "expr": "{service=~\"api|auth-service|scheduler|parser-worker|notifier\"} != \"GET / 200\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -1016,7 +1016,7 @@
             "uid": "tempo"
           },
           "limit": 20,
-          "query": "{ resource.service.name = \"api\" }",
+          "query": "{ resource.service.name = \"api\" && duration > 20ms }",
           "queryType": "traceql",
           "refId": "A"
         }
