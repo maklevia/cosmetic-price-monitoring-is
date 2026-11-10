@@ -33,6 +33,21 @@ async function main(): Promise<void> {
   app.use(express.json());
   app.use(cors(corsOptions));
   app.use(cookieParser());
+  app.use((req, res, next) => {
+    const startedAt = Date.now();
+
+    res.on("finish", () => {
+      const line = `[auth] ${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - startedAt}ms`;
+
+      if (res.statusCode >= 500) {
+        console.error(line);
+      } else {
+        console.log(line);
+      }
+    });
+
+    next();
+  });
   app.use(metricsMiddleware);
 
   app.get("/", (_req, res) => {
