@@ -34,7 +34,7 @@ web (nginx + React)
                  └── auth database
 
 Background workers: scheduler, parser worker, notifier
-Monitoring: Prometheus + PostgreSQL exporters
+Monitoring: Prometheus + Grafana + PostgreSQL exporters
 ```
 
 Main parts:
@@ -48,7 +48,8 @@ Main parts:
   through a PostgreSQL-backed job queue;
 - **Telegram bot** — optional client for price-drop notifications;
 - **Prometheus** — collects application and database metrics;
-- **Grafana, Loki and Tempo** — visualization, logs and traces (in progress).
+- **Grafana** — provisioned dashboards for application and database metrics;
+- **Loki and Tempo** — logs and traces (in progress).
 
 Everything runs in Docker Compose.
 
@@ -64,10 +65,11 @@ Everything runs in Docker Compose.
   auth service, nginx web container, workers and optional Telegram bot.
 - **Prometheus metrics** — application metrics and PostgreSQL metrics collected
   through exporters.
+- **Grafana** — provisioned dashboards for application, database and business
+  metrics.
 
 ### In progress
 
-- **Grafana** — dashboards for application, database and business metrics.
 - **Loki** — collecting and exploring logs from all containers.
 - **Tempo** — distributed traces for HTTP requests, database calls and worker
   jobs.
@@ -78,7 +80,7 @@ Everything runs in Docker Compose.
 - React + Vite + Chakra UI
 - PostgreSQL 15
 - Docker Compose
-- Prometheus, with Grafana, Loki and Tempo in progress
+- Prometheus and Grafana, with Loki and Tempo in progress
 - Telegram bot (Telegraf)
 
 ## Quick start
@@ -90,6 +92,7 @@ docker compose --env-file .env.docker up -d --build
 
 - Web application: http://localhost:8080
 - Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000, login `admin` with `GRAFANA_ADMIN_PASSWORD`
 - Optional Telegram bot:
   `docker compose --env-file .env.docker --profile bot up -d bot`
 
@@ -113,6 +116,9 @@ that depend on them become healthy; both are one-shot containers and should show
   name, so restarting a container does not create duplicate series.
 - `pg_stat_statements` is enabled through `shared_preload_libraries`, which lets
   the exporter show the slowest SQL queries.
+- `grafana` loads its Prometheus datasource and dashboard from
+  `docker/grafana/`, so a fresh volume needs no manual setup. It is available at
+  http://localhost:3000 and bound to `127.0.0.1`.
 
 Locally started services expose Prometheus metrics on separate ports: API `9464`,
 auth `9465`, scheduler `9466`, parser `9467`, notifier `9468`. In Docker every
@@ -144,7 +150,9 @@ docker compose --env-file .env.docker ps
 ```
 
 `migrate` and `monitoring-init` should show `Exited (0)`. Open
-http://localhost:9090/targets; every target should be `UP`.
+http://localhost:9090/targets; every target should be `UP`. Open
+http://localhost:3000 and check that the `Cosmetics Price Monitoring` dashboard
+loads with data.
 
 Inspect a service directly from inside the Docker network:
 
@@ -174,14 +182,16 @@ time() - cosmetics_db_last_price_update_timestamp_seconds
 - `docker/postgres/observability.sql` — monitoring role and extension setup.
 - `api/src/observability/metrics.ts` — metric definitions and metrics server.
 - `auth-service/src/observability/metrics.ts` — auth metric definitions.
+- `docker/grafana/provisioning/` — Prometheus datasource and dashboard provider.
+- `docker/grafana/dashboards/overview.json` — application and database dashboard.
 
-`MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION` and
-`PROMETHEUS_PORT` are configured in `.env.docker` (see
-`.env.docker.example`). The metrics and exporter ports are not published on the
-host. Prometheus itself has no login in this phase and is bound to
-`127.0.0.1`; Grafana will provide the authenticated monitoring UI later.
+`MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION`,
+`PROMETHEUS_PORT`, `GRAFANA_PORT` and `GRAFANA_ADMIN_PASSWORD` are configured in
+`.env.docker` (see `.env.docker.example`). The metrics and exporter ports are
+not published on the host. Prometheus and Grafana are bound to `127.0.0.1`;
+Grafana provides the authenticated monitoring UI.
 
-Reset stored metrics together with the database:
+Reset stored monitoring data together with the database:
 
 ```bash
 docker compose --env-file .env.docker down -v
@@ -206,5 +216,6 @@ docker/
   prometheus/           Prometheus scrape configuration
   postgres-exporter/    custom SQL metrics for both databases
   postgres/             init scripts, monitoring role and pg_stat_statements
+  grafana/              provisioned datasource and dashboard
 docker-compose.yml      full container stack
 ```
