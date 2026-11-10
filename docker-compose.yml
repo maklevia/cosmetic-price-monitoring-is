@@ -7,11 +7,19 @@ x-backend: &backend
   image: cosmetics-backend:local
   env_file:
     - .env.docker
+  environment:
+    METRICS_PORT: ${METRICS_PORT:-9464}
   init: true
 
 services:
   postgres:
     image: postgres:15-alpine
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -28,6 +36,75 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+    restart: unless-stopped
+
+  monitoring-init:
+    image: postgres:15-alpine
+    env_file:
+      - .env.docker
+    volumes:
+      - ./docker/postgres/observability.sql:/observability.sql:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        : "$${MONITORING_DB_PASSWORD:?MONITORING_DB_PASSWORD is required}"
+        PGPASSWORD="$$DB_PASSWORD" psql \
+          -h postgres \
+          -U "$$DB_USER" \
+          -d "$$DB_NAME" \
+          -v monitoring_password="$$MONITORING_DB_PASSWORD" \
+          -v main_db="$$DB_NAME" \
+          -v auth_db="$$AUTH_DB_NAME" \
+          -f /observability.sql
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_NAME: "postgresql://monitoring:${MONITORING_DB_PASSWORD:-monitoring_password}@postgres:5432/${DB_NAME}?sslmode=disable"
+    volumes:
+      - ./docker/postgres-exporter/queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    command:
+      - --extend.query-path=/etc/postgres-exporter/queries.yaml
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  postgres-exporter-auth:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_NAME: "postgresql://monitoring:${MONITORING_DB_PASSWORD:-monitoring_password}@postgres:5432/${AUTH_DB_NAME}?sslmode=disable"
+    volumes:
+      - ./docker/postgres-exporter/queries-auth.yaml:/etc/postgres-exporter/queries-auth.yaml:ro
+    command:
+      - --extend.query-path=/etc/postgres-exporter/queries-auth.yaml
+    depends_on:
+      monitoring-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --web.enable-lifecycle
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - api
+      - auth-service
+      - postgres-exporter
+      - postgres-exporter-auth
     restart: unless-stopped
 
   migrate:
@@ -136,3 +213,4 @@ services:
 
 volumes:
   postgres_data:
+  prometheus_data:

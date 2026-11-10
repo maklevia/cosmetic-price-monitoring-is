@@ -1,0 +1,23 @@
+# Metrics for the separate auth database.
+
+cosmetics_auth_credentials:
+  query: "SELECT count(*) AS total FROM \"Credentials\""
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Number of credentials in the auth database"
+
+cosmetics_auth_refresh_tokens:
+  query: |
+    SELECT count(*) AS total,
+           count(*) FILTER (
+             WHERE revoked_at IS NULL AND expires_at > now()
+           ) AS active
+    FROM "Refresh_Tokens"
+  metrics:
+    - total:
+        usage: "GAUGE"
+        description: "Total refresh tokens"
+    - active:
+        usage: "GAUGE"
+        description: "Refresh tokens that are not revoked and not expired"

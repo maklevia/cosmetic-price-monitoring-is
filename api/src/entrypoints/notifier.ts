@@ -8,6 +8,11 @@ import { JobType } from "@api/modules/job/jobTypes.js";
 import { ParseJob } from "@api/modules/job/ParseJob.js";
 import { NotificationProcessor } from "@api/jobs/NotificationProcessor.js";
 import { sleep } from "@api/utils/time.js";
+import {
+  notifierJobDurationSeconds,
+  notifierJobsTotal,
+  startMetricsServer,
+} from "@api/observability/metrics.js";
 
 function readPositiveInt(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -23,6 +28,7 @@ function readPositiveInt(name: string, fallback: number): number {
 
 async function main(): Promise<void> {
   await initializeDataSource();
+  const stopMetrics = startMetricsServer("notifier");
 
   const queue = new PostgresJobQueue();
   const processor = new NotificationProcessor();
@@ -66,16 +72,25 @@ async function main(): Promise<void> {
       continue;
     }
 
+    const startedAt = process.hrtime.bigint();
+
     try {
       await processor.sendNotifications();
       await queue.complete(job.id);
+      notifierJobsTotal.inc({ status: "success" });
       console.log(`[notifier] Completed job #${job.id}`);
     } catch (error) {
+      notifierJobsTotal.inc({ status: "error" });
       console.error(`[notifier] Failed job #${job.id}:`, error);
       await queue.fail(job.id, error);
+    } finally {
+      notifierJobDurationSeconds.observe(
+        Number(process.hrtime.bigint() - startedAt) / 1e9,
+      );
     }
   }
 
+  await stopMetrics();
   await closeDataSource();
 }
 

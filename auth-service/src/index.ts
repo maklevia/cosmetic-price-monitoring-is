@@ -8,9 +8,15 @@ import {
   closeDataSource,
   initializeDataSource,
 } from "@auth/config/initialize.js";
+import {
+  metricsMiddleware,
+  startMetricsServer,
+} from "@auth/observability/metrics.js";
 
 async function main(): Promise<void> {
   await initializeDataSource();
+
+  const stopMetrics = startMetricsServer("auth-service");
 
   const app = express();
   app.set("trust proxy", 1);
@@ -27,6 +33,7 @@ async function main(): Promise<void> {
   app.use(express.json());
   app.use(cors(corsOptions));
   app.use(cookieParser());
+  app.use(metricsMiddleware);
 
   app.get("/", (_req, res) => {
     res.send("Auth service is running");
@@ -45,6 +52,7 @@ async function main(): Promise<void> {
     shuttingDown = true;
 
     server.close(async () => {
+      await stopMetrics();
       await closeDataSource();
       process.exit(0);
     });

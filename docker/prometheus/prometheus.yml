@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          instance: prometheus
+
+  - job_name: api
+    static_configs:
+      - targets: ["api:9464"]
+        labels:
+          instance: api
+          service: api
+
+  - job_name: auth-service
+    static_configs:
+      - targets: ["auth-service:9464"]
+        labels:
+          instance: auth-service
+          service: auth-service
+
+  - job_name: scheduler
+    static_configs:
+      - targets: ["scheduler:9464"]
+        labels:
+          instance: scheduler
+          service: scheduler
+
+  - job_name: parser-worker
+    static_configs:
+      - targets: ["parser-worker:9464"]
+        labels:
+          instance: parser-worker
+          service: parser-worker
+
+  - job_name: notifier
+    static_configs:
+      - targets: ["notifier:9464"]
+        labels:
+          instance: notifier
+          service: notifier
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          instance: postgres
+          service: postgres
+          database: cosmetics_price_monitoring
+    metric_relabel_configs:
+      - source_labels: ["datname"]
+        regex: "cosmetics_auth|postgres|template0|template1"
+        action: drop
+
+  - job_name: postgres-auth
+    static_configs:
+      - targets: ["postgres-exporter-auth:9187"]
+        labels:
+          instance: postgres-auth
+          service: postgres
+          database: cosmetics_auth
+    metric_relabel_configs:
+      - source_labels: ["datname"]
+        regex: "cosmetics_price_monitoring|postgres|template0|template1"
+        action: drop

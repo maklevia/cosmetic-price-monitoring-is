@@ -8,6 +8,12 @@ import {
   ParseStoreRecordPayload,
 } from "@api/modules/job/jobTypes.js";
 import { StoreName } from "@api/types/Enums.js";
+import {
+  parserJobDurationSeconds,
+  parserJobsTotal,
+  parserPriceDropsTotal,
+  parserPriceUpdatesTotal,
+} from "@api/observability/metrics.js";
 
 export class ParserWorker {
   private readonly parser = new ParserOrchestrator();
@@ -15,22 +21,33 @@ export class ParserWorker {
   private readonly notificationRepository = new NotificationRepository();
 
   async process(job: ParseJob): Promise<void> {
-    switch (job.type) {
-      case JobType.ParseStoreRecord:
-        await this.processStoreRecord(
-          job.payload as unknown as ParseStoreRecordPayload,
-        );
-        return;
+    const stopTimer = parserJobDurationSeconds.startTimer({ type: job.type });
 
-      case JobType.DiscoveryMissingStore:
-        await this.processDiscovery(
-          job.store,
-          job.payload as unknown as DiscoveryMissingStorePayload,
-        );
-        return;
+    try {
+      switch (job.type) {
+        case JobType.ParseStoreRecord:
+          await this.processStoreRecord(
+            job.payload as unknown as ParseStoreRecordPayload,
+          );
+          break;
 
-      default:
-        throw new Error(`Unsupported parser job type: ${job.type}`);
+        case JobType.DiscoveryMissingStore:
+          await this.processDiscovery(
+            job.store,
+            job.payload as unknown as DiscoveryMissingStorePayload,
+          );
+          break;
+
+        default:
+          throw new Error(`Unsupported parser job type: ${job.type}`);
+      }
+
+      parserJobsTotal.inc({ type: job.type, status: "success" });
+    } catch (error) {
+      parserJobsTotal.inc({ type: job.type, status: "error" });
+      throw error;
+    } finally {
+      stopTimer();
     }
   }
 
@@ -69,6 +86,8 @@ export class ParserWorker {
       newRecordData.price,
     );
 
+    parserPriceUpdatesTotal.inc({ store: newRecordData.storeName });
+
     if (
       record.storeName === record.product.primaryStoreName &&
       newRecordData.image &&
@@ -93,6 +112,7 @@ export class ParserWorker {
         record.latestPrice,
         newRecordData.price,
       );
+      parserPriceDropsTotal.inc({ store: record.storeName });
     }
   }
 
