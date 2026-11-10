@@ -2,6 +2,7 @@ import { ProductService } from "@api/modules/product/ProductService.js";
 import { Request, Response } from "express";
 import { getAuthUser } from "@api/middlewares/authMiddleware.js";
 import { ValidationError } from "@api/errors/AppError.js";
+import { apiParseRequestsTotal } from "@api/observability/metrics.js";
 
 export class ProductController {
   private productService: ProductService;
@@ -65,6 +66,7 @@ export class ProductController {
 
       const productId = result.productId;
       const parsedResults = result.parseResult;
+      apiParseRequestsTotal.inc({ store: parsedResults.primaryStore });
 
       return res.status(200).json({ productId, parsedResults });
   };

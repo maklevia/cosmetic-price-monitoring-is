@@ -2,6 +2,10 @@ import { ParsedProduct } from "@api/types/ProductTypes.js";
 import { StoreName } from "@api/types/Enums.js";
 import { checkProductNamesSimilarity } from "@api/parsers/utils/stringUtils.js";
 import { BadGatewayError } from "@api/errors/AppError.js";
+import {
+  parserStoreRequestDurationSeconds,
+  parserStoreRequestsTotal,
+} from "@api/observability/metrics.js";
 import axios from "axios";
 
 export abstract class BaseParser {
@@ -14,14 +18,25 @@ export abstract class BaseParser {
   ): Promise<ParsedProduct | null>;
 
   async parseByLink(link: string): Promise<ParsedProduct | null> {
+    const stopTimer = parserStoreRequestDurationSeconds.startTimer({
+      store: this.storeName,
+    });
+
     try {
       const product = await this.fetchByLink(link);
-      if (!product) {
-        return null;
-      }
+      parserStoreRequestsTotal.inc({
+        store: this.storeName,
+        result: product ? "success" : "not_found",
+      });
       return product;
     } catch (error) {
+      parserStoreRequestsTotal.inc({
+        store: this.storeName,
+        result: "error",
+      });
       this.handleParseError(error);
+    } finally {
+      stopTimer();
     }
   }
 
@@ -29,17 +44,28 @@ export abstract class BaseParser {
     searchProductName: string,
     searchProductBrand: string,
   ): Promise<ParsedProduct | null> {
+    const stopTimer = parserStoreRequestDurationSeconds.startTimer({
+      store: this.storeName,
+    });
+
     try {
       const product = await this.fetchByNameAndBrand(
         searchProductName,
         searchProductBrand,
       );
-      if (!product) {
-        return null;
-      }
+      parserStoreRequestsTotal.inc({
+        store: this.storeName,
+        result: product ? "success" : "not_found",
+      });
       return product;
     } catch (error) {
+      parserStoreRequestsTotal.inc({
+        store: this.storeName,
+        result: "error",
+      });
       this.handleParseError(error);
+    } finally {
+      stopTimer();
     }
   }
 

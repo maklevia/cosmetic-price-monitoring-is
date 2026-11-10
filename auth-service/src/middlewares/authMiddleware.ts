@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { AuthService } from "@auth/modules/auth/AuthService.js";
 import { AuthenticationError } from "@auth/errors/AppError.js";
 import { UserPayload } from "@auth/types/AuthTypes.js";
+import { authTokenValidationFailuresTotal } from "@auth/observability/metrics.js";
 
 const authService = new AuthService();
 
@@ -13,6 +14,7 @@ export const authMiddleware = (
   const accessToken: string | undefined = req.cookies.accessToken;
 
   if (!accessToken) {
+    authTokenValidationFailuresTotal.inc({ reason: "missing" });
     return next(new AuthenticationError("No access token provided"));
   }
 
@@ -20,6 +22,7 @@ export const authMiddleware = (
     res.locals.user = authService.validateAccessToken(accessToken);
     next();
   } catch (error) {
+    authTokenValidationFailuresTotal.inc({ reason: "invalid" });
     next(error);
   }
 };

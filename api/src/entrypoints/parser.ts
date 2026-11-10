@@ -12,6 +12,7 @@ import { ParserWorker } from "@api/jobs/ParserWorker.js";
 import { ParseJob } from "@api/modules/job/ParseJob.js";
 import { StoreName } from "@api/types/Enums.js";
 import { sleep } from "@api/utils/time.js";
+import { startMetricsServer } from "@api/observability/metrics.js";
 
 const PARSER_JOB_TYPES = [
   JobType.ParseStoreRecord,
@@ -47,6 +48,7 @@ function getParserDelayMs(store: StoreName | null): number {
 
 async function main(): Promise<void> {
   await initializeDataSource();
+  const stopMetrics = startMetricsServer("parser-worker");
 
   const queue = new PostgresJobQueue();
   const worker = new ParserWorker();
@@ -118,6 +120,7 @@ async function main(): Promise<void> {
   process.once("SIGTERM", shutdown);
 
   await Promise.all(loops);
+  await stopMetrics();
   await closeDataSource();
 }
 

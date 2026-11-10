@@ -5,6 +5,10 @@ import { ChannelName } from "@api/types/Enums.js";
 import { ChannelRepository } from "@api/modules/channel/ChannelRepository.js";
 import { AppError } from "@api/errors/AppError.js";
 import { PendingNotifData, PriceDropDInfo } from "@api/types/NotificationTypes.js";
+import {
+  notificationDeliveryDurationSeconds,
+  notificationsTotal,
+} from "@api/observability/metrics.js";
 import crypto from "crypto";
 
 const notifRepository = new NotificationRepository();
@@ -88,6 +92,7 @@ export class NotificationProcessor {
       priceDropData.productId,
       priceDropData?.image,
     );
+    notificationsTotal.inc({ channel: "in_app", result: "success" });
   }
 
   private async dispatchNotificationToGateways(
@@ -100,6 +105,10 @@ export class NotificationProcessor {
     for (const [channelName, gateway] of gateways) {
       const accountId = channelAccountIds[channelName];
       if (!accountId || failedChannels.has(channelName)) continue;
+
+      const stopTimer = notificationDeliveryDurationSeconds.startTimer({
+        channel: channelName,
+      });
 
       try {
         await gateway.sendPriceDropNotification(
@@ -114,6 +123,7 @@ export class NotificationProcessor {
           },
           batchId,
         );
+        notificationsTotal.inc({ channel: channelName, result: "success" });
       } catch (error) {
         await this.handleGatewayError(
           error,
@@ -121,6 +131,8 @@ export class NotificationProcessor {
           channelName,
           failedChannels,
         );
+      } finally {
+        stopTimer();
       }
     }
   }
@@ -136,8 +148,13 @@ export class NotificationProcessor {
       const accountId = channelAccountIds[channelName];
       if (!accountId || failedChannels.has(channelName)) continue;
 
+      const stopTimer = notificationDeliveryDurationSeconds.startTimer({
+        channel: channelName,
+      });
+
       try {
         await gateway.sendPriceDropSummary(accountId, count, batchId);
+        notificationsTotal.inc({ channel: channelName, result: "success" });
       } catch (error) {
         await this.handleGatewayError(
           error,
@@ -145,6 +162,8 @@ export class NotificationProcessor {
           channelName,
           failedChannels,
         );
+      } finally {
+        stopTimer();
       }
     }
   }
@@ -155,6 +174,8 @@ export class NotificationProcessor {
     channelName: ChannelName,
     failedChannels: Set<ChannelName>,
   ): Promise<void> {
+    notificationsTotal.inc({ channel: channelName, result: "failed" });
+
     if (error instanceof ChannelNotificationError) {
       failedChannels.add(channelName);
       await channelRepository.disconnectChannelAccount(userId, channelName);
