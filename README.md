@@ -34,7 +34,7 @@ web (nginx + React)
                  └── auth database
 
 Background workers: scheduler, parser worker, notifier
-Monitoring: Prometheus + Grafana + PostgreSQL exporters
+Monitoring: Prometheus + Grafana + Loki + PostgreSQL exporters
 ```
 
 Main parts:
@@ -49,7 +49,8 @@ Main parts:
 - **Telegram bot** — optional client for price-drop notifications;
 - **Prometheus** — collects application and database metrics;
 - **Grafana** — provisioned dashboards for application and database metrics;
-- **Loki and Tempo** — logs and traces (in progress).
+- **Loki and Alloy** — collects and stores logs from all containers;
+- **Tempo** — distributed traces (in progress).
 
 Everything runs in Docker Compose.
 
@@ -67,10 +68,10 @@ Everything runs in Docker Compose.
   through exporters.
 - **Grafana** — provisioned dashboards for application, database and business
   metrics.
+- **Loki** — collecting and exploring logs from all containers.
 
 ### In progress
 
-- **Loki** — collecting and exploring logs from all containers.
 - **Tempo** — distributed traces for HTTP requests, database calls and worker
   jobs.
 
@@ -80,7 +81,7 @@ Everything runs in Docker Compose.
 - React + Vite + Chakra UI
 - PostgreSQL 15
 - Docker Compose
-- Prometheus and Grafana, with Loki and Tempo in progress
+- Prometheus, Grafana and Loki, with Tempo in progress
 - Telegram bot (Telegraf)
 
 ## Quick start
@@ -100,7 +101,7 @@ docker compose --env-file .env.docker up -d --build
 that depend on them become healthy; both are one-shot containers and should show
 `Exited (0)`.
 
-## Metrics and Prometheus
+## Monitoring
 
 ### What is running
 
@@ -116,7 +117,10 @@ that depend on them become healthy; both are one-shot containers and should show
   name, so restarting a container does not create duplicate series.
 - `pg_stat_statements` is enabled through `shared_preload_libraries`, which lets
   the exporter show the slowest SQL queries.
-- `grafana` loads its Prometheus datasource and dashboard from
+- `loki` stores container logs for 7 days in `loki_data`. `alloy` discovers
+  project containers through the Docker socket, labels entries by Compose
+  service, and pushes them to Loki. Neither service is published on the host.
+- `grafana` loads its Prometheus and Loki datasources and dashboard from
   `docker/grafana/`, so a fresh volume needs no manual setup. It is available at
   http://localhost:3000 and bound to `127.0.0.1`.
 
@@ -141,6 +145,9 @@ container uses `9464` because each container has its own network namespace.
   and drops, notification delivery and scheduler runs.
 - **Node.js:** CPU, memory, event loop lag, garbage collection and other default
   process metrics supplied by `prom-client`.
+- **Logs:** stdout and stderr from every project container, labeled by
+  `service`, `container` and `stream`. Logs stay in plain text and are filtered
+  with LogQL; no level parsing or structured logging is required.
 
 ### Check that it works
 
@@ -159,7 +166,17 @@ Inspect a service directly from inside the Docker network:
 ```bash
 docker compose --env-file .env.docker exec web wget -qO- http://api:9464/metrics | head
 docker compose --env-file .env.docker exec web wget -qO- http://postgres-exporter:9187/metrics | grep cosmetics_db_
+docker compose --env-file .env.docker exec web wget -qO- http://loki:3100/loki/api/v1/label/service/values
 ```
+
+In Grafana, open **Explore**, choose **Loki**, and run:
+
+```logql
+{service="api"}
+{service=~"api|auth-service"} |= "error"
+```
+
+The dashboard also has an **Application Logs** panel at the bottom.
 
 Example PromQL queries for the demo:
 
@@ -182,14 +199,17 @@ time() - cosmetics_db_last_price_update_timestamp_seconds
 - `docker/postgres/observability.sql` — monitoring role and extension setup.
 - `api/src/observability/metrics.ts` — metric definitions and metrics server.
 - `auth-service/src/observability/metrics.ts` — auth metric definitions.
-- `docker/grafana/provisioning/` — Prometheus datasource and dashboard provider.
-- `docker/grafana/dashboards/overview.json` — application and database dashboard.
+- `docker/loki/loki.yml` — Loki storage and 7-day retention.
+- `docker/alloy/config.alloy` — Docker log discovery and Loki push.
+- `docker/grafana/provisioning/` — Prometheus and Loki datasources, dashboard provider.
+- `docker/grafana/dashboards/overview.json` — application, database and logs dashboard.
 
 `MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION`,
 `PROMETHEUS_PORT`, `GRAFANA_PORT` and `GRAFANA_ADMIN_PASSWORD` are configured in
-`.env.docker` (see `.env.docker.example`). The metrics and exporter ports are
-not published on the host. Prometheus and Grafana are bound to `127.0.0.1`;
-Grafana provides the authenticated monitoring UI.
+`.env.docker` (see `.env.docker.example`). The metrics, exporter, Loki and Alloy
+ports are not published on the host. Prometheus and Grafana are bound to
+`127.0.0.1`; Grafana provides the authenticated monitoring UI. Alloy reads the
+Docker socket read-only to tail container logs.
 
 Reset stored monitoring data together with the database:
 
@@ -216,6 +236,8 @@ docker/
   prometheus/           Prometheus scrape configuration
   postgres-exporter/    custom SQL metrics for both databases
   postgres/             init scripts, monitoring role and pg_stat_statements
-  grafana/              provisioned datasource and dashboard
+  grafana/              provisioned datasources and dashboard
+  loki/                 Loki storage and retention configuration
+  alloy/                Docker log collection configuration
 docker-compose.yml      full container stack
 ```

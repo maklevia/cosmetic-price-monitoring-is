@@ -11,7 +11,7 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
         return;
     }
 
-    console.log('API Unexpected error: ', err);
+    console.error("[api] Unexpected error:", err);
 
     res.status(500).json({
         status: "error",

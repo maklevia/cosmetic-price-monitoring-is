@@ -9,3 +9,4 @@ docs/
 .playwright-mcp/
 # TypeScript cache files
 *.tsbuildinfo
+learning_material/
