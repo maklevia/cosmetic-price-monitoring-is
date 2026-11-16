@@ -814,8 +814,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Queue depth",
-      "description": "Pending jobs in the PostgreSQL-backed queues.",
+      "title": "Pending audit jobs",
+      "description": "Jobs still marked pending in the Parse_Jobs audit/state table. RabbitMQ queue depth is on Application & Workers.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

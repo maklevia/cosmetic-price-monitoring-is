@@ -3,7 +3,7 @@ import {
   closeDataSource,
   initializeDataSource,
 } from "@api/config/initialize.js";
-import { PostgresJobQueue } from "@api/modules/job/PostgresJobQueue.js";
+import { RabbitMqJobQueue } from "@api/modules/job/RabbitMqJobQueue.js";
 import { JobType } from "@api/modules/job/jobTypes.js";
 import { ParseJob } from "@api/modules/job/ParseJob.js";
 import { NotificationProcessor } from "@api/jobs/NotificationProcessor.js";
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   await initializeDataSource();
   const stopMetrics = startMetricsServer("notifier");
 
-  const queue = new PostgresJobQueue();
+  const queue = new RabbitMqJobQueue();
   const processor = new NotificationProcessor();
   const pollMs = readPositiveInt("NOTIFIER_POLL_MS", 1000);
   const workerId = `${os.hostname()}:${process.pid}:notifier`;
@@ -95,6 +95,7 @@ async function main(): Promise<void> {
     }
   }
 
+  await queue.close();
   await stopMetrics();
   await closeDataSource();
 }

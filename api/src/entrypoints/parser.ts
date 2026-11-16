@@ -3,7 +3,7 @@ import {
   closeDataSource,
   initializeDataSource,
 } from "@api/config/initialize.js";
-import { PostgresJobQueue } from "@api/modules/job/PostgresJobQueue.js";
+import { RabbitMqJobQueue } from "@api/modules/job/RabbitMqJobQueue.js";
 import {
   JobType,
   parseStoreName,
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   await initializeDataSource();
   const stopMetrics = startMetricsServer("parser-worker");
 
-  const queue = new PostgresJobQueue();
+  const queue = new RabbitMqJobQueue();
   const worker = new ParserWorker();
   const store = process.env.PARSER_STORE
     ? parseStoreName(process.env.PARSER_STORE)
@@ -120,6 +120,7 @@ async function main(): Promise<void> {
   process.once("SIGTERM", shutdown);
 
   await Promise.all(loops);
+  await queue.close();
   await stopMetrics();
   await closeDataSource();
 }

@@ -2432,8 +2432,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Queue depth",
-      "description": "Pending jobs in the PostgreSQL-backed queues.",
+      "title": "Pending audit jobs",
+      "description": "Jobs still marked pending in the Parse_Jobs audit/state table. RabbitMQ queue depth is on Application & Workers.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -2531,8 +2531,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Oldest pending job age",
-      "description": "Age of the oldest pending job in each queue.",
+      "title": "Oldest pending audit job",
+      "description": "Age of the oldest pending job in the Parse_Jobs audit/state table.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

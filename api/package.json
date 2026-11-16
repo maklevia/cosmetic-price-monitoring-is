@@ -29,6 +29,7 @@
     "@opentelemetry/resources": "^3.1.1",
     "@opentelemetry/sdk-node": "^0.301.1",
     "@opentelemetry/semantic-conventions": "^1.45.0",
+    "amqplib": "^2.4.0",
     "axios": "^1.18.1",
     "bcrypt-ts": "^8.0.1",
     "cookie-parser": "^1.4.7",
