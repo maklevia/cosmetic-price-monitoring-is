@@ -91,7 +91,16 @@ Everything runs in Docker Compose.
 ## Quick start
 
 ```bash
+docker compose up -d --build
+```
+
+Compose loads `.env.docker.example` as fallback defaults, so a fresh checkout
+starts without copying an env file. To customize values, copy the example and
+use it explicitly:
+
+```bash
 cp .env.docker.example .env.docker
+# edit .env.docker
 docker compose --env-file .env.docker up -d --build
 ```
 
@@ -106,6 +115,27 @@ docker compose --env-file .env.docker up -d --build
 `migrate`, `monitoring-init` and `tempo-init` must finish successfully before the
 services that depend on them become healthy; all are one-shot containers and
 should show `Exited (0)`.
+
+Generate demo users, collection data, price history, notifications and HTTP/job
+activity:
+
+```bash
+npm run demo
+```
+
+This creates or reuses `demo@example.com` / `DemoPass123`, seeds three real
+products with their store links, queues a notification job and sends API/auth
+requests. Use `npm run demo -- --requests=40` for more traffic. To also enqueue
+three real parser jobs, run `npm run demo -- --with-parser`; those jobs depend on
+the external store sites being reachable.
+
+For a clean presentation, reset the stack and run the demo again:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+npm run demo
+```
 
 ## Monitoring
 
@@ -283,6 +313,8 @@ sum(rate(rabbitmq_global_messages_delivered_get_manual_ack_total[5m]))
 - `docker/tempo/tempo.yml` — Tempo storage, OTLP receivers and 7-day retention.
 - `api/src/observability/tracing.ts` — OpenTelemetry setup for API and workers.
 - `api/src/observability/spans.ts` — manual spans for parser, notifier and scheduler jobs.
+- `api/src/scripts/demo.ts` — demo seed, HTTP traffic and job enqueue script.
+- `api/src/scripts/demoFixtures.ts` — three demo products with real store links.
 - `auth-service/src/observability/tracing.ts` — OpenTelemetry setup for auth.
 - `docker/grafana/provisioning/` — Prometheus, Loki and Tempo datasources plus the dashboard provider.
 - `docker/grafana/dashboards/overview.json` — health and activity summary.
@@ -293,9 +325,13 @@ sum(rate(rabbitmq_global_messages_delivered_get_manual_ack_total[5m]))
 
 `MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION`,
 `PROMETHEUS_PORT`, `GRAFANA_PORT` and `GRAFANA_ADMIN_PASSWORD` are configured in
-`.env.docker` (see `.env.docker.example`). `OTEL_EXPORTER_OTLP_ENDPOINT` can
-override the default internal Tempo endpoint. The RabbitMQ connection is built
-from `RABBITMQ_URL` (optional full override), `RABBITMQ_USER` and
+`.env.docker` (see `.env.docker.example`). A fresh checkout falls back to
+`.env.docker.example` defaults and the Compose defaults; when `.env.docker`
+exists it is loaded after the example file, so it overrides values. Pass
+`--env-file .env.docker` to `docker compose` if you also customize Compose
+interpolation values such as ports. `OTEL_EXPORTER_OTLP_ENDPOINT` can override
+the default internal Tempo endpoint. The RabbitMQ connection is built from
+`RABBITMQ_URL` (optional full override), `RABBITMQ_USER` and
 `RABBITMQ_PASSWORD`; the defaults match the Compose service. Changing the user
 or password after the RabbitMQ volume is initialized requires updating the
 existing RabbitMQ user or removing `rabbitmq_data`. RabbitMQ AMQP, management
@@ -317,6 +353,7 @@ docker compose --env-file .env.docker down -v
 api/
   src/entrypoints/      api, scheduler, parser and notifier process entrypoints
   src/jobs/             scheduling and job-processing logic
+  src/scripts/          demo seed and traffic generator
   src/modules/job/      job entity, Parse_Jobs audit store and RabbitMQ queue
   src/modules/          domain modules (product, notification, user, channel, internal)
   src/observability/    Prometheus metrics, metrics server and OpenTelemetry tracing
