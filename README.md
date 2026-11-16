@@ -123,11 +123,12 @@ activity:
 npm run demo
 ```
 
-This creates or reuses `demo@example.com` / `DemoPass123`, seeds three real
-products with their store links, queues a notification job and sends API/auth
-requests. Use `npm run demo -- --requests=40` for more traffic. To also enqueue
-three real parser jobs, run `npm run demo -- --with-parser`; those jobs depend on
-the external store sites being reachable.
+This creates or reuses `demo@example.com` / `DemoPass123`, seeds nine real
+products (three from each store) with their store links, queues a notification
+job and sends API/auth requests. Use `npm run demo -- --requests=40` for more
+traffic. To also enqueue three real parser jobs (one per store), run
+`npm run demo -- --with-parser`; those jobs depend on the external store sites
+being reachable.
 
 For a clean presentation, reset the stack and run the demo again:
 
@@ -314,7 +315,7 @@ sum(rate(rabbitmq_global_messages_delivered_get_manual_ack_total[5m]))
 - `api/src/observability/tracing.ts` — OpenTelemetry setup for API and workers.
 - `api/src/observability/spans.ts` — manual spans for parser, notifier and scheduler jobs.
 - `api/src/scripts/demo.ts` — demo seed, HTTP traffic and job enqueue script.
-- `api/src/scripts/demoFixtures.ts` — three demo products with real store links.
+- `api/src/scripts/demoFixtures.ts` — nine demo products with real store links.
 - `auth-service/src/observability/tracing.ts` — OpenTelemetry setup for auth.
 - `docker/grafana/provisioning/` — Prometheus, Loki and Tempo datasources plus the dashboard provider.
 - `docker/grafana/dashboards/overview.json` — health and activity summary.

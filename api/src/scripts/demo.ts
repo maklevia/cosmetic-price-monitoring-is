@@ -367,9 +367,11 @@ async function seedPriceDrop(
 async function seedDemoData(
   userId: number,
 ): Promise<{ products: DemoProductResult[] }> {
-  // The demo account is intentionally reset so rerunning the script produces
-  // one fresh notification per product instead of duplicate in-app messages.
+  // The demo account is intentionally reset so rerunning the script reflects
+  // the current fixture list instead of accumulating old collections and
+  // duplicate in-app notifications.
   await query(`DELETE FROM "User_Notifications" WHERE "user_id" = $1`, [userId]);
+  await query(`DELETE FROM "Collections" WHERE "user_id" = $1`, [userId]);
 
   const products: DemoProductResult[] = [];
 
@@ -519,14 +521,14 @@ async function enqueueJobs(
     await waitForJob(notificationJob);
 
     if (withParser) {
-      const queuedProducts = new Set<number>();
+      const queuedStores = new Set<StoreName>();
 
       for (const product of products) {
         const record = product.records[0];
 
-        if (!record || queuedProducts.has(product.productId)) continue;
+        if (!record || queuedStores.has(record.storeName)) continue;
 
-        queuedProducts.add(product.productId);
+        queuedStores.add(record.storeName);
         const parserJob = await queue.enqueue({
           type: JobType.ParseStoreRecord,
           store: record.storeName,
@@ -554,10 +556,10 @@ async function main(): Promise<void> {
     const { products } = await seedDemoData(userId);
 
     console.log(
-      `[demo] Seeded ${products.length} products, ${products.reduce(
-        (sum, product) => sum + product.records.length,
+      `[demo] Seeded ${products.length} products with ${DEMO_PRODUCTS.reduce(
+        (sum, fixture) => sum + fixture.stores.length,
         0,
-      )} store records and price history`,
+      )} store links and price history`,
     );
 
     const createdJobs = await enqueueJobs(products, withParser);
