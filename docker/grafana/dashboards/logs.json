@@ -23,7 +23,7 @@
   "panels": [
     {
       "type": "text",
-      "title": "Logs",
+      "title": "Start here",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -32,7 +32,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Loki logs\nAll project containers are collected by Alloy and labeled with `service`, `container` and `stream`.\n\n`$service` includes the application, web, PostgreSQL and monitoring containers. Use the **Errors** panel for failures, **Recent logs** for the latest entries, and **Search results** for a literal text search.\n",
+        "content": "## Loki logs\n\nAll containers are labeled with `service`, `container` and `stream`. Use **Service**, **Stream**, **Errors** and **Search results** to explore them.\n",
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,

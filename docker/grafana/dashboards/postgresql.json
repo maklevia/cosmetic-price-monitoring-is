@@ -84,7 +84,7 @@
       "gridPos": {
         "x": 0,
         "y": 1,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -148,9 +148,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 4,
+        "x": 8,
         "y": 1,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -214,9 +214,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 8,
+        "x": 16,
         "y": 1,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -280,9 +280,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 12,
-        "y": 1,
-        "w": 4,
+        "x": 0,
+        "y": 6,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -346,9 +346,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 16,
-        "y": 1,
-        "w": 4,
+        "x": 8,
+        "y": 6,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -416,9 +416,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 20,
-        "y": 1,
-        "w": 4,
+        "x": 16,
+        "y": 6,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -531,7 +531,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 11,
         "w": 24,
         "h": 9
       },
@@ -589,7 +589,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 15,
+        "y": 20,
         "w": 24,
         "h": 1
       },
@@ -648,7 +648,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 21,
         "w": 12,
         "h": 8
       },
@@ -751,7 +751,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 16,
+        "y": 21,
         "w": 12,
         "h": 8
       },
@@ -838,7 +838,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 29,
         "w": 12,
         "h": 8
       },
@@ -929,7 +929,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 24,
+        "y": 29,
         "w": 12,
         "h": 8
       },
@@ -970,7 +970,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 37,
         "w": 24,
         "h": 1
       },
@@ -1029,7 +1029,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 38,
         "w": 12,
         "h": 8
       },
@@ -1128,7 +1128,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 33,
+        "y": 38,
         "w": 12,
         "h": 8
       },
@@ -1200,7 +1200,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 46,
         "w": 6,
         "h": 6
       },
@@ -1270,7 +1270,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 41,
+        "y": 46,
         "w": 6,
         "h": 6
       },
@@ -1340,7 +1340,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 41,
+        "y": 46,
         "w": 6,
         "h": 6
       },
@@ -1410,7 +1410,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 41,
+        "y": 46,
         "w": 6,
         "h": 6
       },
@@ -1449,7 +1449,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 47,
+        "y": 52,
         "w": 24,
         "h": 1
       },
@@ -1508,7 +1508,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 53,
         "w": 12,
         "h": 8
       },
@@ -1590,7 +1590,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 48,
+        "y": 53,
         "w": 12,
         "h": 8
       },
@@ -1696,7 +1696,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 56,
+        "y": 61,
         "w": 12,
         "h": 8
       },
@@ -1802,7 +1802,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 56,
+        "y": 61,
         "w": 12,
         "h": 8
       },
@@ -1906,7 +1906,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 64,
+        "y": 69,
         "w": 24,
         "h": 8
       },
@@ -1959,7 +1959,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 72,
+        "y": 77,
         "w": 24,
         "h": 1
       },
@@ -2008,12 +2008,48 @@
                 "value": "Total time (s)"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Database"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Query"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total time (s)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
           }
         ]
       },
       "gridPos": {
         "x": 0,
-        "y": 73,
+        "y": 78,
         "w": 24,
         "h": 10
       },
@@ -2053,12 +2089,12 @@
               "Time": true,
               "job": true,
               "instance": true,
-              "service": true
+              "service": true,
+              "queryid": true
             },
             "indexByName": {},
             "renameByName": {
               "query_text": "Query",
-              "queryid": "Query ID",
               "database": "Database"
             }
           }
@@ -2113,7 +2149,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 83,
+        "y": 88,
         "w": 12,
         "h": 10
       },
@@ -2153,12 +2189,12 @@
               "Time": true,
               "job": true,
               "instance": true,
-              "service": true
+              "service": true,
+              "queryid": true
             },
             "indexByName": {},
             "renameByName": {
               "query_text": "Query",
-              "queryid": "Query ID",
               "database": "Database"
             }
           }
@@ -2213,7 +2249,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 83,
+        "y": 88,
         "w": 12,
         "h": 10
       },
@@ -2253,12 +2289,12 @@
               "Time": true,
               "job": true,
               "instance": true,
-              "service": true
+              "service": true,
+              "queryid": true
             },
             "indexByName": {},
             "renameByName": {
               "query_text": "Query",
-              "queryid": "Query ID",
               "database": "Database"
             }
           }
@@ -2272,7 +2308,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 93,
+        "y": 98,
         "w": 24,
         "h": 1
       },
@@ -2280,17 +2316,22 @@
       "id": 31
     },
     {
-      "type": "stat",
+      "type": "table",
       "title": "Business table counts",
-      "description": "Row counts in the main application database.",
+      "description": "Current row counts in the main application database.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": false
           },
           "mappings": [],
           "thresholds": {
@@ -2304,27 +2345,54 @@
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Metric"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 350
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Count"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 0,
-        "y": 94,
+        "y": 99,
         "w": 12,
         "h": 7
       },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
-        },
-        "orientation": "vertical",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        }
       },
       "targets": [
         {
@@ -2333,59 +2401,31 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "cosmetics_db_products_total{database=~\"$database\"}",
-          "refId": "A",
-          "range": false,
+          "expr": "label_replace(cosmetics_db_products_total{database=~\"$database\"}, \"entity\", \"Products\", \"__name__\", \".*\") or label_replace(cosmetics_db_users_total{database=~\"$database\"}, \"entity\", \"Users\", \"__name__\", \".*\") or label_replace(cosmetics_db_collections_total{database=~\"$database\"}, \"entity\", \"Collections\", \"__name__\", \".*\") or label_replace(cosmetics_db_price_history_rows_total{database=~\"$database\"}, \"entity\", \"Price history rows\", \"__name__\", \".*\") or label_replace(cosmetics_db_unread_notifications_total{database=~\"$database\"}, \"entity\", \"Unread notifications\", \"__name__\", \".*\")",
+          "format": "table",
           "instant": true,
-          "legendFormat": "Products"
-        },
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_users_total{database=~\"$database\"}",
-          "refId": "B",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Users"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_collections_total{database=~\"$database\"}",
-          "refId": "C",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Collections"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_price_history_rows_total{database=~\"$database\"}",
-          "refId": "D",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Price history rows"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_unread_notifications_total{database=~\"$database\"}",
-          "refId": "E",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Unread notifications"
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "server": true,
+              "job": true,
+              "instance": true,
+              "service": true,
+              "database": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "entity": "Metric"
+            }
+          }
         }
       ],
       "id": 32
@@ -2442,7 +2482,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 94,
+        "y": 99,
         "w": 12,
         "h": 7
       },
@@ -2541,7 +2581,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 101,
+        "y": 106,
         "w": 12,
         "h": 7
       },
@@ -2640,7 +2680,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 101,
+        "y": 106,
         "w": 12,
         "h": 7
       },
@@ -2676,17 +2716,22 @@
       "id": 35
     },
     {
-      "type": "stat",
+      "type": "table",
       "title": "Auth tables",
-      "description": "Row counts in the separate authentication database.",
+      "description": "Current row counts in the separate authentication database.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": false
           },
           "mappings": [],
           "thresholds": {
@@ -2700,27 +2745,54 @@
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Metric"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 350
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Count"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 0,
-        "y": 108,
+        "y": 113,
         "w": 12,
         "h": 7
       },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
-        },
-        "orientation": "vertical",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        }
       },
       "targets": [
         {
@@ -2729,35 +2801,31 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "cosmetics_auth_credentials_total{database=~\"$database\"}",
-          "refId": "A",
-          "range": false,
+          "expr": "label_replace(cosmetics_auth_credentials_total{database=~\"$database\"}, \"entity\", \"Credentials\", \"__name__\", \".*\") or label_replace(cosmetics_auth_refresh_tokens_total{database=~\"$database\"}, \"entity\", \"Refresh tokens\", \"__name__\", \".*\") or label_replace(cosmetics_auth_refresh_tokens_active{database=~\"$database\"}, \"entity\", \"Active refresh tokens\", \"__name__\", \".*\")",
+          "format": "table",
           "instant": true,
-          "legendFormat": "Credentials"
-        },
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_auth_refresh_tokens_total{database=~\"$database\"}",
-          "refId": "B",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Refresh tokens"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_auth_refresh_tokens_active{database=~\"$database\"}",
-          "refId": "C",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Active refresh tokens"
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "server": true,
+              "job": true,
+              "instance": true,
+              "service": true,
+              "database": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "entity": "Metric"
+            }
+          }
         }
       ],
       "id": 36
@@ -2814,7 +2882,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 108,
+        "y": 113,
         "w": 12,
         "h": 7
       },

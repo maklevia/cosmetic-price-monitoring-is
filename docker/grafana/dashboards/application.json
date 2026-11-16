@@ -106,7 +106,7 @@
     },
     {
       "type": "stat",
-      "title": "HTTP p95 latency",
+      "title": "HTTP p95",
       "description": "95th percentile response time for the selected services and routes.",
       "datasource": {
         "type": "prometheus",
@@ -176,7 +176,7 @@
     },
     {
       "type": "stat",
-      "title": "Auth token failures",
+      "title": "Token failures",
       "description": "Access-token validation failures over the selected range.",
       "datasource": {
         "type": "prometheus",

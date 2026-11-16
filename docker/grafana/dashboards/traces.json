@@ -23,7 +23,7 @@
   "panels": [
     {
       "type": "text",
-      "title": "Traces",
+      "title": "Start here",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -32,7 +32,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Tempo traces\nUse `$service` to focus on API, auth or a worker, and `$minDuration` to hide very short spans. Open any trace in **Explore → Tempo** to inspect the span tree and database/HTTP children.\n\nWorker traces are available under `parser-worker`, `notifier` and `scheduler`; open a trace to inspect database and HTTP children.\n",
+        "content": "## Tempo traces\n\nFilter with **Service** / **Min duration**, then open a trace in **Explore → Tempo**. Worker services: parser-worker, notifier, scheduler.\n",
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,
@@ -83,7 +83,68 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trace ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 195
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Duration (ms)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 0,
@@ -166,7 +227,68 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trace ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 195
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Duration (ms)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 0,
@@ -249,7 +371,68 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trace ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 240
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 195
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 135
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Duration (ms)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 12,
@@ -318,7 +501,7 @@
     },
     {
       "type": "text",
-      "title": "TraceQL examples",
+      "title": "Start here",
       "gridPos": {
         "x": 0,
         "y": 26,
@@ -327,7 +510,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "### TraceQL examples\n```traceql\n{ resource.service.name = \"api\" }\n{ resource.service.name = \"auth-service\" }\n{ resource.service.name = \"parser-worker\" }\n{ resource.service.name = \"api\" && duration > 1s }\n{ status = error }\n{ resource.service.name = \"api\" } >> { status = error }\n```\n\nUse **Explore → Tempo** for full trace details, span attributes and the node graph.\n",
+        "content": "## Tempo traces\n\nFilter with **Service** / **Min duration**, then open a trace in **Explore → Tempo**. Worker services: parser-worker, notifier, scheduler.\n",
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,

@@ -23,7 +23,7 @@
   "panels": [
     {
       "type": "text",
-      "title": "Cosmetics observability",
+      "title": "Start here",
       "gridPos": {
         "x": 0,
         "y": 0,
@@ -32,7 +32,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Cosmetics observability\nUse the **Cosmetics dashboards** menu in the top bar, or open:\n\n- [PostgreSQL](/d/cosmetics-postgresql) — connections, transactions, cache, locks, queries, table activity\n- [Application & Workers](/d/cosmetics-application) — HTTP, auth, parser, notifier, scheduler and Node runtime\n- [Logs](/d/cosmetics-logs) — Loki log exploration for all containers\n- [Traces](/d/cosmetics-traces) — Tempo trace exploration for API, auth and workers\n",
+        "content": "## Cosmetics observability\n\nOpen [PostgreSQL](/d/cosmetics-postgresql), [Application & Workers](/d/cosmetics-application), [Logs](/d/cosmetics-logs) or [Traces](/d/cosmetics-traces).\n",
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,
@@ -88,7 +88,7 @@
       "gridPos": {
         "x": 0,
         "y": 5,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -168,9 +168,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 4,
+        "x": 8,
         "y": 5,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -234,9 +234,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 8,
+        "x": 16,
         "y": 5,
-        "w": 4,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -304,9 +304,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 12,
-        "y": 5,
-        "w": 4,
+        "x": 0,
+        "y": 10,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -374,9 +374,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 16,
-        "y": 5,
-        "w": 4,
+        "x": 8,
+        "y": 10,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -444,9 +444,9 @@
         "overrides": []
       },
       "gridPos": {
-        "x": 20,
-        "y": 5,
-        "w": 4,
+        "x": 16,
+        "y": 10,
+        "w": 8,
         "h": 5
       },
       "options": {
@@ -484,7 +484,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 10,
+        "y": 15,
         "w": 24,
         "h": 1
       },
@@ -543,7 +543,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 11,
+        "y": 16,
         "w": 12,
         "h": 8
       },
@@ -630,7 +630,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 11,
+        "y": 16,
         "w": 12,
         "h": 8
       },
@@ -765,7 +765,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 19,
+        "y": 24,
         "w": 12,
         "h": 8
       },
@@ -864,7 +864,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 19,
+        "y": 24,
         "w": 12,
         "h": 8
       },
@@ -917,7 +917,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 32,
         "w": 24,
         "h": 1
       },
@@ -925,7 +925,7 @@
       "id": 14
     },
     {
-      "type": "stat",
+      "type": "table",
       "title": "Business counts",
       "description": "Current row counts in the main database.",
       "datasource": {
@@ -934,8 +934,13 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": false
           },
           "mappings": [],
           "thresholds": {
@@ -949,27 +954,54 @@
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Metric"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Count"
+              },
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 33,
         "w": 6,
         "h": 9
       },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
-        },
-        "orientation": "vertical",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        }
       },
       "targets": [
         {
@@ -978,47 +1010,31 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "cosmetics_db_products_total",
-          "refId": "A",
-          "range": false,
+          "expr": "label_replace(cosmetics_db_products_total, \"entity\", \"Products\", \"__name__\", \".*\") or label_replace(cosmetics_db_users_total, \"entity\", \"Users\", \"__name__\", \".*\") or label_replace(cosmetics_db_collections_total, \"entity\", \"Collections\", \"__name__\", \".*\") or label_replace(cosmetics_db_price_history_rows_total, \"entity\", \"Price history rows\", \"__name__\", \".*\")",
+          "format": "table",
           "instant": true,
-          "legendFormat": "Products"
-        },
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "transformations": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_users_total",
-          "refId": "B",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Users"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_collections_total",
-          "refId": "C",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Collections"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "editorMode": "code",
-          "expr": "cosmetics_db_price_history_rows_total",
-          "refId": "D",
-          "range": false,
-          "instant": true,
-          "legendFormat": "Price history rows"
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "server": true,
+              "job": true,
+              "instance": true,
+              "service": true,
+              "database": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "entity": "Metric"
+            }
+          }
         }
       ],
       "id": 15
@@ -1075,7 +1091,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 28,
+        "y": 33,
         "w": 6,
         "h": 9
       },
@@ -1191,7 +1207,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 28,
+        "y": 33,
         "w": 12,
         "h": 9
       },
