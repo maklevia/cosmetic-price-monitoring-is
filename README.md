@@ -71,7 +71,7 @@ Everything runs in Docker Compose.
   Application & Workers, Logs and Traces.
 - **Loki** — collecting and exploring logs from all containers.
 - **Tempo** — distributed traces for HTTP requests, database calls and worker
-  activity, collected through OpenTelemetry.
+  jobs, collected through OpenTelemetry.
 
 ## Tech stack
 
@@ -135,7 +135,7 @@ container uses `9464` because each container has its own network namespace.
 - **PostgreSQL activity:** connections, commits and rollbacks, cache hit ratio,
   disk reads, locks, deadlocks, temporary files, database and table sizes,
   per-table row changes, index usage and the top 20 queries from
-  `pg_stat_statements`.
+  `pg_stat_statements`, including normalized query text.
 - **Database content:** product, user, collection and price-history counts,
   store records per store, queue sizes, oldest pending job, last price update
   per store, unread notifications, and auth credentials and refresh-token
@@ -152,9 +152,9 @@ container uses `9464` because each container has its own network namespace.
   `service`, `container` and `stream`. Logs stay in plain text and are filtered
   with LogQL; no level parsing or structured logging is required.
 - **Traces:** OpenTelemetry spans for incoming HTTP requests, PostgreSQL
-  queries, outgoing HTTP calls and background worker database activity. Each
-  trace is labeled with the Compose service name (`api`, `auth-service`,
-  `scheduler`, `parser-worker`, `notifier`).
+  queries, outgoing HTTP calls, parser store requests and parser, notifier and
+  scheduler job spans. Each trace is labeled with the Compose service name
+  (`api`, `auth-service`, `scheduler`, `parser-worker`, `notifier`).
 
 ### Dashboards
 
@@ -245,6 +245,7 @@ time() - cosmetics_db_last_price_update_timestamp_seconds
 - `docker/alloy/config.alloy` — Docker log discovery and Loki push.
 - `docker/tempo/tempo.yml` — Tempo storage, OTLP receivers and 7-day retention.
 - `api/src/observability/tracing.ts` — OpenTelemetry setup for API and workers.
+- `api/src/observability/spans.ts` — manual spans for parser, notifier and scheduler jobs.
 - `auth-service/src/observability/tracing.ts` — OpenTelemetry setup for auth.
 - `docker/grafana/provisioning/` — Prometheus, Loki and Tempo datasources plus the dashboard provider.
 - `docker/grafana/dashboards/overview.json` — health and activity summary.

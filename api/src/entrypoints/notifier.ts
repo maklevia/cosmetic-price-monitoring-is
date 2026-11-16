@@ -13,6 +13,7 @@ import {
   notifierJobsTotal,
   startMetricsServer,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 
 function readPositiveInt(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -75,7 +76,11 @@ async function main(): Promise<void> {
     const startedAt = process.hrtime.bigint();
 
     try {
-      await processor.sendNotifications();
+      await withSpan(
+        "notifier.job",
+        { "job.id": job.id, "job.type": job.type },
+        () => processor.sendNotifications(),
+      );
       await queue.complete(job.id);
       notifierJobsTotal.inc({ status: "success" });
       console.log(`[notifier] Completed job #${job.id}`);

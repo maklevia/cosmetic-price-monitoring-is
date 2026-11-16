@@ -21,7 +21,9 @@ if (endpoint) {
     instrumentations: [
       new HttpInstrumentation({
         ignoreIncomingRequestHook: (request) =>
-          request.url === "/metrics" || request.url === "/healthz",
+          request.url === "/" ||
+          request.url === "/metrics" ||
+          request.url === "/healthz",
       }),
       new UndiciInstrumentation(),
       new ExpressInstrumentation(),

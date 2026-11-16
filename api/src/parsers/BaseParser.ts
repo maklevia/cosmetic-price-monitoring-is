@@ -6,6 +6,7 @@ import {
   parserStoreRequestDurationSeconds,
   parserStoreRequestsTotal,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 import axios from "axios";
 
 export abstract class BaseParser {
@@ -23,7 +24,11 @@ export abstract class BaseParser {
     });
 
     try {
-      const product = await this.fetchByLink(link);
+      const product = await withSpan(
+        "parser.store_request",
+        { store: this.storeName, operation: "link" },
+        () => this.fetchByLink(link),
+      );
       parserStoreRequestsTotal.inc({
         store: this.storeName,
         result: product ? "success" : "not_found",
@@ -49,9 +54,11 @@ export abstract class BaseParser {
     });
 
     try {
-      const product = await this.fetchByNameAndBrand(
-        searchProductName,
-        searchProductBrand,
+      const product = await withSpan(
+        "parser.store_request",
+        { store: this.storeName, operation: "search" },
+        () =>
+          this.fetchByNameAndBrand(searchProductName, searchProductBrand),
       );
       parserStoreRequestsTotal.inc({
         store: this.storeName,

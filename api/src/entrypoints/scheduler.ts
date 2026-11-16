@@ -12,6 +12,7 @@ import {
   schedulerRunsTotal,
   startMetricsServer,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 
 const timezone = process.env.SCHEDULER_TIMEZONE ?? "Europe/Kyiv";
 
@@ -23,7 +24,7 @@ async function runScheduled(
 
   try {
     console.log(`[scheduler] Starting ${name}`);
-    await action();
+    await withSpan("scheduler.run", { job: name }, () => action());
 
     schedulerRunsTotal.inc({ job: name, result: "success" });
 

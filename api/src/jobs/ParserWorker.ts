@@ -14,6 +14,7 @@ import {
   parserPriceDropsTotal,
   parserPriceUpdatesTotal,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 
 export class ParserWorker {
   private readonly parser = new ParserOrchestrator();
@@ -24,23 +25,15 @@ export class ParserWorker {
     const stopTimer = parserJobDurationSeconds.startTimer({ type: job.type });
 
     try {
-      switch (job.type) {
-        case JobType.ParseStoreRecord:
-          await this.processStoreRecord(
-            job.payload as unknown as ParseStoreRecordPayload,
-          );
-          break;
-
-        case JobType.DiscoveryMissingStore:
-          await this.processDiscovery(
-            job.store,
-            job.payload as unknown as DiscoveryMissingStorePayload,
-          );
-          break;
-
-        default:
-          throw new Error(`Unsupported parser job type: ${job.type}`);
-      }
+      await withSpan(
+        "parser.job",
+        {
+          "job.id": job.id,
+          "job.type": job.type,
+          "job.store": job.store ?? "all",
+        },
+        () => this.processJob(job),
+      );
 
       parserJobsTotal.inc({ type: job.type, status: "success" });
     } catch (error) {
@@ -48,6 +41,26 @@ export class ParserWorker {
       throw error;
     } finally {
       stopTimer();
+    }
+  }
+
+  private async processJob(job: ParseJob): Promise<void> {
+    switch (job.type) {
+      case JobType.ParseStoreRecord:
+        await this.processStoreRecord(
+          job.payload as unknown as ParseStoreRecordPayload,
+        );
+        break;
+
+      case JobType.DiscoveryMissingStore:
+        await this.processDiscovery(
+          job.store,
+          job.payload as unknown as DiscoveryMissingStorePayload,
+        );
+        break;
+
+      default:
+        throw new Error(`Unsupported parser job type: ${job.type}`);
     }
   }
 
