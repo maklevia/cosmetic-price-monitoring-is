@@ -67,11 +67,11 @@ Everything runs in Docker Compose.
   auth service, nginx web container, workers and optional Telegram bot.
 - **Prometheus metrics** — application metrics and PostgreSQL metrics collected
   through exporters.
-- **Grafana** — provisioned dashboards for application, database and business
-  metrics.
+- **Grafana** — five provisioned dashboards: Overview, PostgreSQL,
+  Application & Workers, Logs and Traces.
 - **Loki** — collecting and exploring logs from all containers.
 - **Tempo** — distributed traces for HTTP requests, database calls and worker
-  jobs, collected through OpenTelemetry.
+  activity, collected through OpenTelemetry.
 
 ## Tech stack
 
@@ -122,9 +122,9 @@ should show `Exited (0)`.
   stores them locally for 7 days in `tempo_data`. The API, auth service,
   scheduler, parser worker and notifier load OpenTelemetry instrumentation at
   startup and export traces to Tempo. Tempo is not published on the host.
-- `grafana` loads its Prometheus, Loki and Tempo datasources and dashboard from
-  `docker/grafana/`, so a fresh volume needs no manual setup. It is available at
-  http://localhost:3000 and bound to `127.0.0.1`.
+- `grafana` loads its Prometheus, Loki and Tempo datasources and the five
+  Cosmetics dashboards from `docker/grafana/`, so a fresh volume needs no manual
+  setup. It is available at http://localhost:3000 and bound to `127.0.0.1`.
 
 Locally started services expose Prometheus metrics on separate ports: API `9464`,
 auth `9465`, scheduler `9466`, parser `9467`, notifier `9468`. In Docker every
@@ -138,7 +138,8 @@ container uses `9464` because each container has its own network namespace.
   `pg_stat_statements`.
 - **Database content:** product, user, collection and price-history counts,
   store records per store, queue sizes, oldest pending job, last price update
-  per store and unread notifications.
+  per store, unread notifications, and auth credentials and refresh-token
+  counts.
 - **HTTP:** request count, duration histogram and status codes. The route label
   uses the Express route template, not the raw URL.
 - **Auth:** signup, login, refresh and password-reset outcomes, and failed token
@@ -155,6 +156,26 @@ container uses `9464` because each container has its own network namespace.
   trace is labeled with the Compose service name (`api`, `auth-service`,
   `scheduler`, `parser-worker`, `notifier`).
 
+### Dashboards
+
+All dashboards live in the `Cosmetics` folder and link to each other through the
+**Cosmetics dashboards** menu in Grafana's top bar.
+
+- **Overview** — target and exporter health, API error rate and latency, database
+  connections, queue depth, worker activity, business counts and price freshness.
+- **PostgreSQL** — collection health, connections by state, long transactions,
+  locks, commits/rollbacks, cache hit ratio, temporary files, database and table
+  sizes, row changes, index vs sequential scans, top queries and application/auth
+  table counts. A `$database` variable switches between the main and auth
+  databases.
+- **Application & Workers** — HTTP requests and latency by service/route/status,
+  auth outcomes, parser jobs and store requests, price updates and drops,
+  notifier deliveries, scheduler runs and Node.js CPU/memory/event-loop/GC.
+- **Logs** — Loki log volume, error lines, recent logs and literal search for the
+  application, web, PostgreSQL and monitoring containers.
+- **Traces** — Tempo recent, slow and error traces, filtered by service and
+  minimum span duration, with TraceQL examples.
+
 ### Check that it works
 
 ```bash
@@ -164,8 +185,9 @@ docker compose --env-file .env.docker ps
 
 `migrate`, `monitoring-init` and `tempo-init` should show `Exited (0)`. Open
 http://localhost:9090/targets; every target should be `UP`. Open
-http://localhost:3000 and check that the `Cosmetics Price Monitoring` dashboard
-loads with data.
+http://localhost:3000 and check the five Cosmetics dashboards. Start with
+**Overview**; it links to **PostgreSQL**, **Application & Workers**, **Logs** and
+**Traces**.
 
 Inspect a service directly from inside the Docker network:
 
@@ -192,13 +214,16 @@ Choose **Tempo** in Explore and run:
 { resource.service.name = "auth-service" }
 ```
 
-The dashboard also has **Application Logs** and **Recent API Traces** panels at
-the bottom.
+Logs and traces have their own dashboards. Use the **Cosmetics dashboards** menu
+in Grafana's top bar, or the links on the **Overview** dashboard.
 
 Example PromQL queries for the demo:
 
 ```promql
 up
+pg_up
+pg_exporter_last_scrape_error
+pg_scrape_collector_success{collector="stat_database"}
 rate(pg_stat_database_xact_commit[1m])
 pg_stat_database_numbackends / pg_settings_max_connections
 rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m]))
@@ -222,7 +247,11 @@ time() - cosmetics_db_last_price_update_timestamp_seconds
 - `api/src/observability/tracing.ts` — OpenTelemetry setup for API and workers.
 - `auth-service/src/observability/tracing.ts` — OpenTelemetry setup for auth.
 - `docker/grafana/provisioning/` — Prometheus, Loki and Tempo datasources plus the dashboard provider.
-- `docker/grafana/dashboards/overview.json` — application, database, logs and traces dashboard.
+- `docker/grafana/dashboards/overview.json` — health and activity summary.
+- `docker/grafana/dashboards/postgresql.json` — PostgreSQL activity, tables, queries and exporter health.
+- `docker/grafana/dashboards/application.json` — HTTP, auth, workers, scheduler and Node.js runtime.
+- `docker/grafana/dashboards/logs.json` — Loki log exploration.
+- `docker/grafana/dashboards/traces.json` — Tempo trace exploration.
 
 `MONITORING_DB_PASSWORD`, `METRICS_PORT`, `PROMETHEUS_RETENTION`,
 `PROMETHEUS_PORT`, `GRAFANA_PORT` and `GRAFANA_ADMIN_PASSWORD` are configured in
@@ -257,7 +286,7 @@ docker/
   prometheus/           Prometheus scrape configuration
   postgres-exporter/    custom SQL metrics for both databases
   postgres/             init scripts, monitoring role and pg_stat_statements
-  grafana/              provisioned datasources and dashboard
+  grafana/              provisioned datasources and dashboards
   loki/                 Loki storage and retention configuration
   alloy/                Docker log collection configuration
   tempo/                Tempo storage and retention configuration
