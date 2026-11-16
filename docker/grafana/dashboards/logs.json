@@ -720,7 +720,7 @@
         "multi": true,
         "refresh": 2,
         "sort": 1,
-        "allValue": ".*"
+        "allValue": ".+"
       },
       {
         "name": "stream",
@@ -746,7 +746,7 @@
         "multi": true,
         "refresh": 2,
         "sort": 1,
-        "allValue": ".*"
+        "allValue": ".+"
       },
       {
         "name": "search",
