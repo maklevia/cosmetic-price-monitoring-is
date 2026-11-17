@@ -1,6 +1,8 @@
 import { AppDataSource } from "@api/config/data-source.js";
-import { EnqueueJobInput, JobStatus } from "@api/modules/job/jobTypes.js";
-import { ClaimJobsOptions, JobQueue } from "@api/modules/job/JobQueue.js";
+import {
+  EnqueueJobInput,
+  JobStatus,
+} from "@api/modules/job/jobTypes.js";
 import { ParseJob } from "@api/modules/job/ParseJob.js";
 
 function unwrapRows<T>(result: unknown): T[] {
@@ -11,8 +13,14 @@ function unwrapRows<T>(result: unknown): T[] {
   return (result ?? []) as T[];
 }
 
-export class PostgresJobQueue implements JobQueue {
-  async enqueue(input: EnqueueJobInput): Promise<number> {
+export interface JobFailureState {
+  attempts: number;
+  maxAttempts: number;
+  final: boolean;
+}
+
+export class JobRecordStore {
+  async create(input: EnqueueJobInput): Promise<number> {
     const result = await AppDataSource.query(
       `INSERT INTO "Parse_Jobs"
         ("type", "store", "payload", "max_attempts", "available_at")
@@ -31,36 +39,20 @@ export class PostgresJobQueue implements JobQueue {
     return rows[0].id;
   }
 
-  async claim(options: ClaimJobsOptions): Promise<ParseJob | null> {
-    const storeClause = options.store ? "AND store = $3" : "";
-    const params: unknown[] = [options.types, options.workerId];
-
-    if (options.store) {
-      params.push(options.store);
-    }
-
+  async claim(jobId: number, workerId: string): Promise<ParseJob | null> {
+    // A worker may have crashed after claiming the row but before acking the
+    // message. Allowing "processing" lets the redelivered message reclaim it.
     const result = await AppDataSource.query(
-      `WITH next_job AS (
-         SELECT "id"
-         FROM "Parse_Jobs"
-         WHERE "status" = '${JobStatus.Pending}'
-           AND "available_at" <= now()
-           AND "type" = ANY($1::text[])
-           ${storeClause}
-         ORDER BY "id"
-         LIMIT 1
-         FOR UPDATE SKIP LOCKED
-       )
-       UPDATE "Parse_Jobs" AS job
-       SET "status" = '${JobStatus.Processing}',
+      `UPDATE "Parse_Jobs" AS job
+       SET "status" = $3,
            "locked_at" = now(),
            "locked_by" = $2,
            "attempts" = job."attempts" + 1,
            "updated_at" = now()
-       FROM next_job
-       WHERE job."id" = next_job."id"
+       WHERE "id" = $1
+         AND "status" IN ($4, $3)
        RETURNING job.*`,
-      params,
+      [jobId, workerId, JobStatus.Processing, JobStatus.Pending],
     );
 
     const rows = unwrapRows<ParseJob>(result);
@@ -70,49 +62,80 @@ export class PostgresJobQueue implements JobQueue {
   async complete(jobId: number): Promise<void> {
     await AppDataSource.query(
       `UPDATE "Parse_Jobs"
-       SET "status" = '${JobStatus.Done}',
+       SET "status" = $2,
            "locked_at" = NULL,
            "locked_by" = NULL,
            "updated_at" = now()
        WHERE "id" = $1`,
-      [jobId],
+      [jobId, JobStatus.Done],
     );
   }
 
-  async fail(jobId: number, error: unknown): Promise<void> {
+  async fail(jobId: number, error: unknown): Promise<JobFailureState | null> {
     const message = error instanceof Error ? error.message : String(error);
-
-    await AppDataSource.query(
+    const result = await AppDataSource.query(
       `UPDATE "Parse_Jobs"
        SET "status" = CASE
-             WHEN "attempts" >= "max_attempts" THEN '${JobStatus.Failed}'
-             ELSE '${JobStatus.Pending}'
+             WHEN "attempts" >= "max_attempts" THEN $2
+             ELSE $3
            END,
            "available_at" = CASE
              WHEN "attempts" >= "max_attempts" THEN "available_at"
              ELSE now() + ("attempts" * interval '1 minute')
            END,
-           "last_error" = $2,
+           "last_error" = $4,
+           "locked_at" = NULL,
+           "locked_by" = NULL,
+           "updated_at" = now()
+       WHERE "id" = $1
+       RETURNING "attempts", "max_attempts", "status"`,
+      [jobId, JobStatus.Failed, JobStatus.Pending, message],
+    );
+
+    const row = unwrapRows<{
+      attempts: number;
+      max_attempts: number;
+      status: JobStatus;
+    }>(result)[0];
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      attempts: row.attempts,
+      maxAttempts: row.max_attempts,
+      final: row.status === JobStatus.Failed,
+    };
+  }
+
+  async markFailed(jobId: number, error: unknown): Promise<void> {
+    const message = error instanceof Error ? error.message : String(error);
+
+    await AppDataSource.query(
+      `UPDATE "Parse_Jobs"
+       SET "status" = $2,
+           "last_error" = $3,
            "locked_at" = NULL,
            "locked_by" = NULL,
            "updated_at" = now()
        WHERE "id" = $1`,
-      [jobId, message],
+      [jobId, JobStatus.Failed, message],
     );
   }
 
   async releaseStale(olderThanMinutes: number): Promise<number> {
     const result = await AppDataSource.query(
       `UPDATE "Parse_Jobs"
-       SET "status" = '${JobStatus.Pending}',
+       SET "status" = $2,
            "locked_at" = NULL,
            "locked_by" = NULL,
            "available_at" = now(),
            "updated_at" = now()
-       WHERE "status" = '${JobStatus.Processing}'
+       WHERE "status" = $3
          AND "locked_at" < now() - ($1 * interval '1 minute')
        RETURNING "id"`,
-      [olderThanMinutes],
+      [olderThanMinutes, JobStatus.Pending, JobStatus.Processing],
     );
 
     return unwrapRows<{ id: number }>(result).length;

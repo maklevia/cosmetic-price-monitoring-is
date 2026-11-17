@@ -45,6 +45,13 @@ scrape_configs:
           instance: notifier
           service: notifier
 
+  - job_name: rabbitmq
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+        labels:
+          instance: rabbitmq
+          service: rabbitmq
+
   - job_name: postgres
     static_configs:
       - targets: ["postgres-exporter:9187"]

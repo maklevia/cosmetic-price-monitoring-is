@@ -115,21 +115,41 @@ cosmetics_db_unread_notifications:
 
 cosmetics_pg_stat_statements:
   query: |
-    SELECT COALESCE(queryid::text, 'unknown') AS queryid,
+    SELECT queryid,
+           query_text,
            sum(calls)::bigint AS calls,
            sum(total_exec_time) / 1000 AS total_exec_time_seconds,
            avg(mean_exec_time) / 1000 AS mean_exec_time_seconds,
            sum(rows)::bigint AS rows,
            sum(shared_blks_read)::bigint AS shared_blks_read,
            sum(shared_blks_hit)::bigint AS shared_blks_hit
-    FROM pg_stat_statements
-    GROUP BY queryid
+    FROM (
+      SELECT COALESCE(queryid::text, 'unknown') AS queryid,
+             COALESCE(
+               LEFT(btrim(regexp_replace("query", '[[:space:]]+', ' ', 'g')), 200),
+               'unknown'
+             ) AS query_text,
+             calls,
+             total_exec_time,
+             mean_exec_time,
+             rows,
+             shared_blks_read,
+             shared_blks_hit
+      FROM pg_stat_statements
+      WHERE dbid = (
+        SELECT oid FROM pg_database WHERE datname = current_database()
+      )
+    ) AS statements
+    GROUP BY queryid, query_text
     ORDER BY sum(total_exec_time) DESC
     LIMIT 20
   metrics:
     - queryid:
         usage: "LABEL"
         description: "PostgreSQL query identifier"
+    - query_text:
+        usage: "LABEL"
+        description: "Normalized query text, truncated to 200 characters"
     - calls:
         usage: "COUNTER"
         description: "Number of times the query was executed"

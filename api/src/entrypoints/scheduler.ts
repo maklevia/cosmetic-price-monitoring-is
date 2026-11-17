@@ -3,7 +3,7 @@ import {
   closeDataSource,
   initializeDataSource,
 } from "@api/config/initialize.js";
-import { PostgresJobQueue } from "@api/modules/job/PostgresJobQueue.js";
+import { RabbitMqJobQueue } from "@api/modules/job/RabbitMqJobQueue.js";
 import { JobType } from "@api/modules/job/jobTypes.js";
 import { ParsingScheduler } from "@api/jobs/ParsingScheduler.js";
 import { MaintenanceService } from "@api/jobs/MaintenanceService.js";
@@ -12,6 +12,7 @@ import {
   schedulerRunsTotal,
   startMetricsServer,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 
 const timezone = process.env.SCHEDULER_TIMEZONE ?? "Europe/Kyiv";
 
@@ -23,7 +24,7 @@ async function runScheduled(
 
   try {
     console.log(`[scheduler] Starting ${name}`);
-    await action();
+    await withSpan("scheduler.run", { job: name }, () => action());
 
     schedulerRunsTotal.inc({ job: name, result: "success" });
 
@@ -40,7 +41,7 @@ async function main(): Promise<void> {
   await initializeDataSource();
   const stopMetrics = startMetricsServer("scheduler");
 
-  const queue = new PostgresJobQueue();
+  const queue = new RabbitMqJobQueue();
   const parsingScheduler = new ParsingScheduler(queue);
   const maintenanceService = new MaintenanceService();
 
@@ -91,6 +92,7 @@ async function main(): Promise<void> {
       task.stop();
     }
 
+    await queue.close();
     await stopMetrics();
     await closeDataSource();
     process.exit(0);

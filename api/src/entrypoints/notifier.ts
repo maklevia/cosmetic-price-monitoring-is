@@ -3,7 +3,7 @@ import {
   closeDataSource,
   initializeDataSource,
 } from "@api/config/initialize.js";
-import { PostgresJobQueue } from "@api/modules/job/PostgresJobQueue.js";
+import { RabbitMqJobQueue } from "@api/modules/job/RabbitMqJobQueue.js";
 import { JobType } from "@api/modules/job/jobTypes.js";
 import { ParseJob } from "@api/modules/job/ParseJob.js";
 import { NotificationProcessor } from "@api/jobs/NotificationProcessor.js";
@@ -13,6 +13,7 @@ import {
   notifierJobsTotal,
   startMetricsServer,
 } from "@api/observability/metrics.js";
+import { withSpan } from "@api/observability/spans.js";
 
 function readPositiveInt(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
   await initializeDataSource();
   const stopMetrics = startMetricsServer("notifier");
 
-  const queue = new PostgresJobQueue();
+  const queue = new RabbitMqJobQueue();
   const processor = new NotificationProcessor();
   const pollMs = readPositiveInt("NOTIFIER_POLL_MS", 1000);
   const workerId = `${os.hostname()}:${process.pid}:notifier`;
@@ -75,7 +76,11 @@ async function main(): Promise<void> {
     const startedAt = process.hrtime.bigint();
 
     try {
-      await processor.sendNotifications();
+      await withSpan(
+        "notifier.job",
+        { "job.id": job.id, "job.type": job.type },
+        () => processor.sendNotifications(),
+      );
       await queue.complete(job.id);
       notifierJobsTotal.inc({ status: "success" });
       console.log(`[notifier] Completed job #${job.id}`);
@@ -90,6 +95,7 @@ async function main(): Promise<void> {
     }
   }
 
+  await queue.close();
   await stopMetrics();
   await closeDataSource();
 }
