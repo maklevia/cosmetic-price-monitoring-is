@@ -58,26 +58,6 @@ Main parts:
 
 Everything runs in Docker Compose.
 
-## Project stages
-
-### Done
-
-- **Authentication** — separate auth service, JWT access/refresh tokens,
-  protected API routes and protected frontend routes.
-- **Database and background jobs** — PostgreSQL, migrations, RabbitMQ job
-  transport, PostgreSQL `Parse_Jobs` audit/state, scheduler, parser worker and
-  notifier.
-- **Docker** — the full stack runs in containers: PostgreSQL, RabbitMQ,
-  migrations, API, auth service, nginx web container, workers and optional
-  Telegram bot.
-- **Prometheus metrics** — application, PostgreSQL and RabbitMQ metrics
-  collected through exporters and the RabbitMQ Prometheus plugin.
-- **Grafana** — five provisioned dashboards: Overview, PostgreSQL,
-  Application & Workers, Logs and Traces.
-- **Loki** — collecting and exploring logs from all containers.
-- **Tempo** — distributed traces for HTTP requests, database calls and worker
-  jobs, collected through OpenTelemetry.
-
 ## Tech stack
 
 - Node.js + TypeScript, Express
